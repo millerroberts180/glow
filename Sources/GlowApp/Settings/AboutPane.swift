@@ -46,7 +46,7 @@ struct AboutPane: View {
             } header: {
                 Text("Links")
             } footer: {
-                FooterNote("They open in your browser or mail app. Glow itself never goes online.")
+                FooterNote("They open in \(ReleaseInfo.linksOpenIn). Glow itself never goes online.")
             }
 
             if !ReleaseInfo.copyright.isEmpty {

@@ -14,6 +14,8 @@ enum ReleaseInfo {
     static var supportMailURL: URL { URL(string: "mailto:\(supportEmail ?? placeholderSupportEmail)") ?? websiteURL }
     /// What About's Support link says.
     static var supportTitle: String { supportTitle(email: supportEmail, url: supportURL) }
+    /// Where About's links open: the Support link is a mail link only when there is no help page.
+    static var linksOpenIn: String { supportURL == nil ? "your browser or mail app" : "your browser" }
 
     /// The address when there is one, otherwise the help page's host, as the Website link shows its
     /// host. The placeholder address only when there is neither.
