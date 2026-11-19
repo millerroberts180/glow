@@ -1,28 +1,26 @@
 import Foundation
 import Observation
 
-/// The first-run setup, in order: a welcome, the displays Glow found with a slider for
-/// each, matching their brightness with Quick Match, then where Glow lives and the
-/// brightness keys' permission. Reopened from Settings › General it runs as a tutorial:
-/// the displays and the match, then Done.
+/// The first-run setup, in order: your displays as Glow Desk shows them, matching their
+/// brightness with Quick Match, the brightness keys and their permission, then open at
+/// login. Reopened from Settings › General it runs as a tutorial: the same steps, without
+/// the permission or open at login.
 @MainActor @Observable
 final class SetupModel {
     enum Step: String, CaseIterable {
-        case welcome
-        /// The connected displays, each with its brightness.
+        /// The connected displays, in Glow Desk's own rows, and where Glow Desk is.
         case displays
-        /// Quick Match, or with one display, setting its brightness.
+        /// Quick Match, when two or more displays can be set.
         case match
-        /// Where Glow lives, the brightness keys' permission and open at login.
+        /// The brightness keys: the permission, then a press that Glow handles.
+        case keys
+        /// Open at login.
         case finish
     }
 
     /// Where the match step is.
     enum MatchStage: Hashable {
-        /// Fewer than two displays whose brightness Glow can set: the step sets brightness
-        /// instead.
-        case single
-        /// Matching can't start now, as in safe mode or while displays sleep.
+        /// Matching can't start now, as while displays sleep.
         case unavailable(String)
         /// Choosing the reference.
         case pick
@@ -36,8 +34,6 @@ final class SetupModel {
         case problem(String)
     }
 
-    /// The steps this run shows.
-    let steps: [Step]
     let tutorialOnly: Bool
     var step: Step {
         didSet { stepChanged(from: oldValue) }
@@ -45,7 +41,7 @@ final class SetupModel {
     /// Applied on finish, and only if it differs from what macOS already has.
     var openAtLogin: Bool
     /// Whether macOS lets Glow see the brightness keys. Rechecked once a second while the
-    /// finish step shows, and on every step change.
+    /// keys step shows, and on every step change.
     private(set) var accessGranted: Bool
 
     let store: GlowStore
@@ -68,6 +64,10 @@ final class SetupModel {
     @ObservationIgnored private(set) var work: Task<Void, Never>?
     @ObservationIgnored private let makePatches: @MainActor (GlowStore) -> any MatchPatchPresenting
     @ObservationIgnored private var accessTimer: Timer?
+    /// Glow Desk's openings and the key presses Glow took before this setup opened, so
+    /// only what happens while it's open ticks a step off.
+    private let deskOpensBefore: Int
+    private let keyPressesBefore: Int
 
     /// `patches` puts up the grey patches for a match: on each screen, or for demo
     /// displays nowhere, as the calibration window does.
@@ -79,14 +79,31 @@ final class SetupModel {
         self.permission = permission
         makePatches = patches
         accessGranted = permission.isGranted()
-        steps = Self.steps(tutorialOnly: tutorialOnly)
-        step = steps[0]
+        step = .displays
+        deskOpensBefore = store.glowDeskOpens
+        keyPressesBefore = store.keyPressesTaken
         // On by default the first time, where macOS allows it; afterwards, what macOS says.
         openAtLogin = login.isOn() || (login.canRegister && !store.settings.value.hasCompletedSetup)
     }
 
-    nonisolated static func steps(tutorialOnly: Bool) -> [Step] {
-        tutorialOnly ? [.displays, .match] : [.welcome, .displays, .match, .finish]
+    /// The steps this run shows. Matching needs two displays Glow can set; the tutorial
+    /// shows the keys only when Glow takes them, since it never asks for the permission.
+    nonisolated static func steps(tutorialOnly: Bool, canMatch: Bool, keysReachGlow: Bool) -> [Step] {
+        var steps: [Step] = [.displays]
+        if canMatch { steps.append(.match) }
+        if !tutorialOnly {
+            steps += [.keys, .finish]
+        } else if keysReachGlow {
+            steps.append(.keys)
+        }
+        return steps
+    }
+
+    /// The steps for the desk as it is now. The step on show stays listed, so Back and the
+    /// dots still make sense if a display leaves while it's open.
+    var steps: [Step] {
+        let wanted = Self.steps(tutorialOnly: tutorialOnly, canMatch: store.matchCandidates.count > 1 || matched, keysReachGlow: keysReachGlow)
+        return Step.allCases.filter { wanted.contains($0) || $0 == step }
     }
 
     static func livePatches(_ store: GlowStore) -> any MatchPatchPresenting {
@@ -103,7 +120,6 @@ final class SetupModel {
     /// The footer's main button.
     var primaryTitle: String {
         switch step {
-        case .welcome: return "Get Started"
         case .match where matchStage == .pick: return "Start Matching"
         case .match where matchStage == .adjust || matchStage == .settling: return "Save Match"
         default: return isLast ? (tutorialOnly ? "Done" : "Start Using Glow") : "Continue"
@@ -144,7 +160,7 @@ final class SetupModel {
     func finish() {
         stopWatchingAccess()
         leaveMatch()
-        if steps.contains(.finish), login.canRegister, openAtLogin != login.isOn() {
+        if !tutorialOnly, login.canRegister, openAtLogin != login.isOn() {
             login.set(openAtLogin)
         }
         markSeen()
@@ -169,7 +185,7 @@ final class SetupModel {
     private func stepChanged(from old: Step) {
         // Granted in System Settings while on another step still counts.
         accessGranted = permission.isGranted()
-        if step == .finish { watchAccess() } else { stopWatchingAccess() }
+        if step == .keys { watchAccess() } else { stopWatchingAccess() }
         guard step != old else { return }
         if old == .match { leaveMatch() }
         if step == .match, !matched { startOver() }
@@ -179,11 +195,9 @@ final class SetupModel {
 
     var matchStage: MatchStage {
         if matched { return .matched }
-        guard let match else { return .single }
+        guard let match else { return .pick }
         switch match.step {
         case .intro:
-            if store.safeMode && !store.demoMode, let reason = match.unavailableReason { return .unavailable(reason) }
-            if match.candidates.count < 2 { return .single }
             if let reason = match.unavailableReason { return .unavailable(reason) }
             return .pick
         case .compare, .review: return .adjust
@@ -206,8 +220,8 @@ final class SetupModel {
     }
 
     /// Keeps the match, as Settings › Brightness Match saves it, and moves the matched
-    /// displays together from the reference's slider too, which the last screen shows and
-    /// can turn off.
+    /// displays together from the reference's slider too. Settings › Brightness Match can
+    /// turn that off.
     func saveMatch() async {
         guard let match, isMatching, match.step != .settling else { return }
         if match.pointIndex != nil { match.next() }
@@ -252,6 +266,40 @@ final class SetupModel {
         guard let match, match.step != .intro, match.step != .finished, match.step != .settling else { return }
         saveProblem = nil
         work = Task { await match.cancel() }
+    }
+
+    // MARK: Glow Desk and the keys
+
+    /// Glow Desk opened from the menu bar while setup is open.
+    var openedGlowDesk: Bool { store.glowDeskOpens > deskOpensBefore }
+
+    /// Glow took a brightness key press while setup is open.
+    var pressedKey: Bool { store.keyPressesTaken > keyPressesBefore }
+
+    /// Why a brightness key goes to macOS rather than Glow now, in Glow Desk's words, or
+    /// nil when Glow takes it. The same cases as `BrightnessKeyRouting`.
+    var keysLeftToMacOS: String? {
+        if store.demoMode { return "With demo displays on, the keys work as they do without Glow." }
+        if store.safeMode { return "In safe mode, the keys work as they do without Glow." }
+        if store.controlTarget == .macOnly { return "With Mac chosen for the brightness keys in Glow Desk, the keys work as they do without Glow." }
+        if store.displays.isEmpty { return "Once Glow finds your displays, the keys change them." }
+        return nil
+    }
+
+    /// Glow can see the keys and takes them.
+    var keysReachGlow: Bool { accessGranted && keysLeftToMacOS == nil }
+
+    /// What a brightness key changes now, as Glow Desk's Brightness keys choose.
+    var keysChange: String {
+        switch store.controlTarget {
+        case .all: return "Every display"
+        case .underCursor: return "The display under the pointer"
+        case .macOnly: return "The Mac’s own display"
+        case .focused:
+            // As the keys pick it: the chosen display, or else the first external one.
+            let focused = store.displays.first { $0.id == store.focusedDisplayID } ?? store.displays.first { !$0.isBuiltIn }
+            return focused?.name ?? "The focused display"
+        }
     }
 
     // MARK: Permission

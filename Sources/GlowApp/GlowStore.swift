@@ -36,6 +36,10 @@ final class GlowStore {
     let safeMode: Bool
     /// Set while writes are paused for sleep, wake or a display change; shown in the UI.
     private(set) var pauseReason: String?
+    /// How often Glow Desk has opened and how many brightness-key presses Glow has taken
+    /// this launch. Setup ticks its steps off by them.
+    var glowDeskOpens = 0
+    var keyPressesTaken = 0
     private var started = false
     /// Each setting's writes, newest value first in line; see `WriteCoalescer`.
     private let writes = WriteCoalescer<String, CapabilityValue>()

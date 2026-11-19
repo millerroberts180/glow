@@ -1,5 +1,52 @@
 import SwiftUI
 
+/// Glow Desk's displays: still reading, none found, or a row for each under the pause
+/// notice. Setup's first step shows the same rows.
+struct DeskDisplays: View {
+    let desk: YourDesk
+    let store: GlowStore
+    /// Opens Settings › Displays at a display, from a row's context menu; setup has none.
+    var showSettings: ((PersistentDisplayIdentity) -> Void)?
+
+    var body: some View {
+        switch desk.state {
+        case .reading:
+            VStack(spacing: GlowTokens.Space.s2) {
+                ProgressView().controlSize(.small)
+                Text("Reading your displays…")
+                    .font(GlowTokens.Typography.callout)
+                    .foregroundStyle(GlowTokens.Text.secondary)
+            }
+            .frame(maxWidth: .infinity, minHeight: 88)
+        case .none:
+            VStack(spacing: GlowTokens.Space.s1_5) {
+                Image(systemName: "display")
+                    .font(.title2)
+                    .foregroundStyle(GlowTokens.Text.tertiary)
+                    .accessibilityHidden(true)
+                Text("No displays found")
+                    .font(GlowTokens.Typography.callout)
+                Text("Connect a display, or turn on demo displays in Settings.")
+                    .font(GlowTokens.Typography.caption)
+                    .foregroundStyle(GlowTokens.Text.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity, minHeight: 88)
+        default:
+            VStack(alignment: .leading, spacing: GlowTokens.Space.s4) {
+                if desk.isPaused, let reason = store.pauseReason {
+                    PauseNotice(reason: reason)
+                        .font(GlowTokens.Typography.callout)
+                }
+                ForEach(desk.displays) { display in
+                    DisplayRow(display: display, store: store, isPaused: desk.isPaused,
+                               showSettings: showSettings.map { show in { show(display.id) } })
+                }
+            }
+        }
+    }
+}
+
 /// One display on Glow Desk: its name, how Glow controls it, and its brightness, with volume
 /// only when the display has it. Everything else is in Settings › Displays; the row's context
 /// menu goes straight there.
@@ -7,9 +54,17 @@ struct DisplayRow: View {
     let display: DisplaySnapshot
     let store: GlowStore
     var isPaused = false
-    let showSettings: () -> Void
+    let showSettings: (() -> Void)?
 
     var body: some View {
+        if let showSettings {
+            row.contextMenu { Button("Display Settings…", action: showSettings) }
+        } else {
+            row
+        }
+    }
+
+    @ViewBuilder private var row: some View {
         // The pause notice above the rows says why the levels are dimmed, once.
         let status = display.summaryStatus(isPaused: false)
         let levels = levels
@@ -50,9 +105,6 @@ struct DisplayRow: View {
                     .font(GlowTokens.Typography.caption)
                     .foregroundStyle(GlowTokens.Text.secondary)
             }
-        }
-        .contextMenu {
-            Button("Display Settings…", action: showSettings)
         }
     }
 

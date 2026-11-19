@@ -51,6 +51,7 @@ struct MenuBarView: View {
             LinearKeyframe(1, duration: GlowTokens.Motion.popoverOpen, timingCurve: .easeOut)
         }
         .onAppear {
+            store.glowDeskOpens += 1
             if !reduceMotion { opens += 1 }
         }
         .task { await store.start() }
@@ -120,43 +121,8 @@ struct MenuBarView: View {
         .disabled(desk.isPaused || desk.displays.isEmpty)
     }
 
-    @ViewBuilder private func displays(_ desk: YourDesk) -> some View {
-        switch desk.state {
-        case .reading:
-            VStack(spacing: GlowTokens.Space.s2) {
-                ProgressView().controlSize(.small)
-                Text("Reading your displays…")
-                    .font(GlowTokens.Typography.callout)
-                    .foregroundStyle(GlowTokens.Text.secondary)
-            }
-            .frame(maxWidth: .infinity, minHeight: 88)
-        case .none:
-            VStack(spacing: GlowTokens.Space.s1_5) {
-                Image(systemName: "display")
-                    .font(.title2)
-                    .foregroundStyle(GlowTokens.Text.tertiary)
-                    .accessibilityHidden(true)
-                Text("No displays found")
-                    .font(GlowTokens.Typography.callout)
-                Text("Connect a display, or turn on demo displays in Settings.")
-                    .font(GlowTokens.Typography.caption)
-                    .foregroundStyle(GlowTokens.Text.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity, minHeight: 88)
-        default:
-            VStack(alignment: .leading, spacing: GlowTokens.Space.s4) {
-                if desk.isPaused, let reason = store.pauseReason {
-                    PauseNotice(reason: reason)
-                        .font(GlowTokens.Typography.callout)
-                }
-                ForEach(desk.displays) { display in
-                    DisplayRow(display: display, store: store, isPaused: desk.isPaused) {
-                        openSettings(.displays, display.id)
-                    }
-                }
-            }
-        }
+    private func displays(_ desk: YourDesk) -> some View {
+        DeskDisplays(desk: desk, store: store) { openSettings(.displays, $0) }
     }
 
     /// Glow's one outcome: matched in green with words, or a quiet "not yet" and the way to

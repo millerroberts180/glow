@@ -158,8 +158,8 @@ enum GlowTokens {
         static let overlayHUDInset: CGFloat = 120
         /// A popover level box's height, about a small slider's, so rows keep their rhythm.
         static let levelBoxHeight: CGFloat = 14
-        /// The mark on setup's welcome.
-        static let setupMark: CGFloat = 88
+        /// The mark above setup's first step.
+        static let setupMark: CGFloat = 32
     }
 
     enum Motion {
@@ -176,7 +176,6 @@ enum GlowTokens {
     }
 
     enum Typography {
-        static let title1 = Font.system(size: 28, weight: .bold)
         static let title3 = Font.system(size: 17, weight: .semibold)
         static let headline = Font.system(size: 13, weight: .semibold)
         static let callout = Font.callout
@@ -192,7 +191,6 @@ enum GlowTokens {
         static let actionLabel = Font.system(size: 12, weight: .medium)
         static let actionLabelCompact = Font.system(size: 11, weight: .medium)
         static let actionSymbol = Font.system(size: 11, weight: .semibold)
-        static let cardTitle = Font.system(size: 13, weight: .semibold)
         /// "Glow" in the popover header.
         static let popoverTitle = Font.system(size: 13, weight: .semibold)
         /// A display's name on its popover row.

@@ -9,9 +9,9 @@ final class SetupWindowController: NSWindowController, NSWindowDelegate {
     var onClose: (() -> Void)?
     private var monitor: Any?
 
-    init(store: GlowStore, loginItem: LoginItem, tutorialOnly: Bool, permission: KeyPermission = .live,
+    init(store: GlowStore, login: SetupLogin, tutorialOnly: Bool, permission: KeyPermission = .live,
          patches: @escaping @MainActor (GlowStore) -> any MatchPatchPresenting = SetupModel.livePatches) {
-        model = SetupModel(store: store, login: .live(loginItem), tutorialOnly: tutorialOnly, permission: permission, patches: patches)
+        model = SetupModel(store: store, login: login, tutorialOnly: tutorialOnly, permission: permission, patches: patches)
         let window = NSWindow(
             contentRect: CGRect(origin: .zero, size: GlowTokens.Size.setupWindow),
             styleMask: [.titled, .closable, .fullSizeContentView],
@@ -105,7 +105,7 @@ final class SetupPresenter {
         controller?.close()
         // Someone may have changed Login Items in System Settings since the last look.
         loginItem.refresh()
-        let controller = SetupWindowController(store: store, loginItem: loginItem, tutorialOnly: tutorialOnly)
+        let controller = SetupWindowController(store: store, login: .live(loginItem), tutorialOnly: tutorialOnly)
         controller.onClose = { [weak self] in self?.controller = nil }
         self.controller = controller
         controller.present()

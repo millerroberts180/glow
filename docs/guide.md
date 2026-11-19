@@ -15,21 +15,24 @@ General to try every screen without a monitor attached. Nothing is sent to real 
 
 ## Getting started
 
-The first time Glow opens, a short setup walks through your own displays. First comes a slider for
-each, with a line on how Glow sets it:
+The first time Glow opens, a short setup shows your own displays in Glow Desk's rows, each with how
+Glow sets it, and points at Glow's mark in the menu bar. It ticks off once you open Glow Desk:
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="images/setup-dark.png">
-  <img src="images/setup-light.png" width="640" alt="Setup, Your displays: a brightness slider for the built-in display, an external monitor and a software-dimmed monitor, each with a line on how Glow sets it">
+  <img src="images/setup-light.png" width="640" alt="Setup, Your displays: Glow Desk's rows for the built-in display, an external monitor and a software-dimmed monitor, beside a line to click Glow's mark in the menu bar">
 </picture>
 
-Then you match their brightness. Pick the display that looks right, and a grey patch fills each screen
-while you set the others to look the same. **Not Now** skips this; Settings › Brightness Match does it
-later. The last step has **Allow…** for the brightness keys and **Open Glow at login**.
+With two displays or more, you match their brightness next. Pick the display that looks right, and a
+grey patch fills each screen while you set the others to look the same. **Not Now** skips this;
+Settings › Brightness Match does it later. Then the brightness keys: **Allow…** asks macOS for
+Accessibility access, and once it's on, a press of a brightness key ticks the step off as your displays
+change. The last step is **Open Glow at login**.
 
 After setup, Glow lives in the menu bar as a four-point spark. Click it for Glow Desk. Right-click or
 Control-click it to refresh your displays, open Settings or quit. Settings › General ›
-**Open Tutorial…** runs the displays and matching steps again.
+**Open Tutorial…** runs the same steps again, without the permission or open at login. It shows the
+keys step only once Glow can take them.
 
 ## Glow Desk
 

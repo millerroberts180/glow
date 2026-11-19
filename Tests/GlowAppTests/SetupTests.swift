@@ -129,9 +129,58 @@ private func brightness(_ store: GlowStore, _ id: PersistentDisplayIdentity) -> 
 
 // MARK: Steps
 
-@Test func firstRunWalksThroughMatchingToTheFinishAndTheTutorialSkipsTheEnds() {
-    #expect(SetupModel.steps(tutorialOnly: false) == [.welcome, .displays, .match, .finish])
-    #expect(SetupModel.steps(tutorialOnly: true) == [.displays, .match])
+@Test func firstRunMatchesWhenItCanThenTheKeysAndOpenAtLogin() {
+    #expect(SetupModel.steps(tutorialOnly: false, canMatch: true, keysReachGlow: false) == [.displays, .match, .keys, .finish])
+    #expect(SetupModel.steps(tutorialOnly: false, canMatch: true, keysReachGlow: true) == [.displays, .match, .keys, .finish])
+    #expect(SetupModel.steps(tutorialOnly: false, canMatch: false, keysReachGlow: false) == [.displays, .keys, .finish])
+}
+
+@Test func theTutorialHasNoPermissionOrOpenAtLogin() {
+    #expect(SetupModel.steps(tutorialOnly: true, canMatch: true, keysReachGlow: true) == [.displays, .match, .keys])
+    // It never asks for access, so the keys show only once Glow takes them.
+    #expect(SetupModel.steps(tutorialOnly: true, canMatch: true, keysReachGlow: false) == [.displays, .match])
+    #expect(SetupModel.steps(tutorialOnly: true, canMatch: false, keysReachGlow: false) == [.displays])
+}
+
+@MainActor @Test func stepsFollowTheDesk() async {
+    await SetupFixture.withStore(adapter: FakeAdapter()) { store, _ in
+        await store.refresh()
+        #expect(makeModel(store).steps == [.displays, .match, .keys, .finish])
+        #expect(makeModel(store, tutorialOnly: true).steps == [.displays, .match])
+        #expect(makeModel(store, tutorialOnly: true, access: FakeAccess(granted: true)).steps == [.displays, .match, .keys])
+        // Mac only leaves the keys to macOS, so the tutorial has nothing to press.
+        store.controlTarget = .macOnly
+        #expect(makeModel(store, tutorialOnly: true, access: FakeAccess(granted: true)).steps == [.displays, .match])
+    }
+    await SetupFixture.withStore(adapter: FakeAdapter([mac])) { store, _ in
+        await store.refresh()
+        // One display has nothing to match.
+        #expect(makeModel(store).steps == [.displays, .keys, .finish])
+        #expect(makeModel(store, tutorialOnly: true, access: FakeAccess(granted: true)).steps == [.displays, .keys])
+    }
+    await SetupFixture.withStore(adapter: FakeAdapter(), safeMode: true) { store, _ in
+        await store.refresh()
+        // Safe mode changes nothing: no match, and the keys stay macOS's.
+        #expect(makeModel(store).steps == [.displays, .keys, .finish])
+        #expect(makeModel(store, tutorialOnly: true, access: FakeAccess(granted: true)).steps == [.displays])
+    }
+}
+
+@MainActor @Test func theStepOnShowStaysListedWhenADisplayLeaves() async {
+    let adapter = FakeAdapter()
+    await SetupFixture.withStore(adapter: adapter) { store, _ in
+        await store.refresh()
+        let model = makeModel(store)
+        model.step = .match
+        adapter.connected = [mac]
+        await store.refresh()
+        #expect(model.steps == [.displays, .match, .keys, .finish])
+        #expect(model.matchStage == .unavailable(model.match?.unavailableReason ?? ""))
+        model.back()
+        #expect(model.steps == [.displays, .keys, .finish])
+        model.next()
+        #expect(model.step == .keys)
+    }
 }
 
 @MainActor @Test func finishingFirstRunRecordsCompletionOnce() {
@@ -139,7 +188,7 @@ private func brightness(_ store: GlowStore, _ id: PersistentDisplayIdentity) -> 
         let model = makeModel(store)
         var finished = 0
         model.onFinish = { finished += 1 }
-        #expect(model.step == .welcome && model.isFirst && model.stepNumber == 1)
+        #expect(model.step == .displays && model.isFirst && model.stepNumber == 1)
         for _ in model.steps { model.next() }
         #expect(finished == 1)
         #expect(model.step == .finish)
@@ -154,20 +203,23 @@ private func brightness(_ store: GlowStore, _ id: PersistentDisplayIdentity) -> 
         model.next()
         model.back()
         model.back()
-        #expect(model.step == .welcome)
+        #expect(model.step == .displays)
     }
 }
 
-@MainActor @Test func tutorialShowsTheDisplaysAndTheMatchThenDone() {
-    SetupFixture.withStore { store, saved in
+@MainActor @Test func tutorialShowsTheSameStepsThenDone() async {
+    await SetupFixture.withStore(adapter: FakeAdapter()) { store, saved in
+        await store.refresh()
         let login = FakeLogin(on: false)
-        let model = makeModel(store, tutorialOnly: true, login: login)
+        let model = makeModel(store, tutorialOnly: true, access: FakeAccess(granted: true), login: login)
         var finished = 0
         model.onFinish = { finished += 1 }
         #expect(model.step == .displays && model.isFirst)
         #expect(model.primaryTitle == "Continue")
         model.next()
-        #expect(model.step == .match && model.isLast)
+        #expect(model.step == .match && model.showsNotNow)
+        model.next()
+        #expect(model.step == .keys && model.isLast)
         #expect(model.primaryTitle == "Done")
         model.primary()
         #expect(finished == 1)
@@ -181,7 +233,7 @@ private func brightness(_ store: GlowStore, _ id: PersistentDisplayIdentity) -> 
 @MainActor @Test func closingMidwayCountsAsSeenAndStopsWatching() {
     SetupFixture.withStore { store, saved in
         let model = makeModel(store)
-        model.step = .finish
+        model.step = .keys
         #expect(model.isWatchingAccess)
         model.close()
         #expect(!model.isWatchingAccess)
@@ -202,8 +254,6 @@ private func brightness(_ store: GlowStore, _ id: PersistentDisplayIdentity) -> 
     await SetupFixture.withStore(adapter: FakeAdapter()) { store, _ in
         await store.refresh()
         let model = makeModel(store)
-        #expect(model.primaryTitle == "Get Started")
-        model.next()
         #expect(model.primaryTitle == "Continue")
         model.next()
         #expect(model.primaryTitle == "Start Matching")
@@ -215,24 +265,22 @@ private func brightness(_ store: GlowStore, _ id: PersistentDisplayIdentity) -> 
         #expect(model.matchStage == .matched)
         #expect(model.primaryTitle == "Continue")
         model.next()
+        #expect(model.step == .keys && model.primaryTitle == "Continue")
+        model.next()
         #expect(model.primaryTitle == "Start Using Glow")
     }
 }
 
 // MARK: Matching
 
-@MainActor @Test func oneDisplaySetsItsBrightnessInsteadOfMatching() async {
+@MainActor @Test func oneDisplayGoesStraightToTheKeys() async {
     let adapter = FakeAdapter([mac])
     await SetupFixture.withStore(adapter: adapter) { store, _ in
         await store.refresh()
         let patches = RecordingPatches()
         let model = makeModel(store, patches: patches)
-        model.step = .match
-        #expect(model.matchStage == .single)
-        #expect(!model.showsNotNow && !model.isMatching && model.canGoOn)
-        #expect(model.primaryTitle == "Continue")
         model.primary()
-        #expect(model.step == .finish)
+        #expect(model.step == .keys)
         #expect(patches.shows == 0)
         #expect(adapter.writes.isEmpty)
         #expect(store.brightnessMatch.calibrations.isEmpty)
@@ -255,7 +303,7 @@ private func brightness(_ store: GlowStore, _ id: PersistentDisplayIdentity) -> 
         // Not Now goes on and changes nothing.
         model.next()
         await model.work?.value
-        #expect(model.step == .finish)
+        #expect(model.step == .keys)
         #expect(patches.shows == 0)
         #expect(adapter.writes.isEmpty)
         #expect(store.brightnessMatch.calibrations.isEmpty)
@@ -263,13 +311,14 @@ private func brightness(_ store: GlowStore, _ id: PersistentDisplayIdentity) -> 
     }
 }
 
-@MainActor @Test func safeModeSaysMatchingCantStart() async throws {
-    try await SetupFixture.withStore(adapter: FakeAdapter(), safeMode: true) { store, _ in
+@MainActor @Test func sleepingDisplaysSayMatchingWaits() async throws {
+    try await SetupFixture.withStore(adapter: FakeAdapter()) { store, _ in
         await store.refresh()
+        store.handle(.sleep)
         let model = makeModel(store)
         model.step = .match
         let reason = try #require(model.match?.unavailableReason)
-        #expect(reason.contains("safe mode"))
+        #expect(reason.contains("Matching can start once they settle"))
         #expect(model.matchStage == .unavailable(reason))
         #expect(!model.showsNotNow && model.canGoOn)
         #expect(model.primaryTitle == "Continue")
@@ -455,16 +504,16 @@ private func brightness(_ store: GlowStore, _ id: PersistentDisplayIdentity) -> 
 
 // MARK: Permission
 
-@MainActor @Test func grantIsWatchedOnlyOnTheFinish() {
+@MainActor @Test func grantIsWatchedOnlyOnTheKeysStep() {
     SetupFixture.withStore { store, _ in
         let model = makeModel(store)
-        #expect(!model.isWatchingAccess)
-        model.next()
         #expect(model.step == .displays && !model.isWatchingAccess)
         model.next()
-        #expect(model.step == .match && !model.isWatchingAccess)
+        #expect(model.step == .keys && model.isWatchingAccess)
         model.next()
-        #expect(model.step == .finish && model.isWatchingAccess)
+        #expect(model.step == .finish && !model.isWatchingAccess)
+        model.back()
+        #expect(model.isWatchingAccess)
         model.back()
         #expect(!model.isWatchingAccess)
         model.close()
@@ -474,7 +523,7 @@ private func brightness(_ store: GlowStore, _ id: PersistentDisplayIdentity) -> 
 @MainActor @Test func nothingToWatchOnceAccessIsOn() {
     SetupFixture.withStore { store, _ in
         let model = makeModel(store, access: FakeAccess(granted: true))
-        model.step = .finish
+        model.step = .keys
         #expect(model.accessGranted)
         #expect(!model.isWatchingAccess)
     }
@@ -484,7 +533,7 @@ private func brightness(_ store: GlowStore, _ id: PersistentDisplayIdentity) -> 
     SetupFixture.withStore { store, _ in
         let access = FakeAccess()
         let model = makeModel(store, access: access)
-        model.step = .finish
+        model.step = .keys
         #expect(!model.askedForAccess)
         model.requestAccess()
         #expect(access.requests == 1)
@@ -499,7 +548,7 @@ private func brightness(_ store: GlowStore, _ id: PersistentDisplayIdentity) -> 
     SetupFixture.withStore { store, _ in
         let access = FakeAccess()
         let model = makeModel(store, access: access)
-        model.step = .finish
+        model.step = .keys
         access.granted = true
         #expect(!model.accessGranted)
         SetupFixture.spin(seconds: 1.3)
@@ -512,11 +561,76 @@ private func brightness(_ store: GlowStore, _ id: PersistentDisplayIdentity) -> 
     SetupFixture.withStore { store, _ in
         let access = FakeAccess()
         let model = makeModel(store, access: access)
-        model.step = .match
+        model.step = .finish
         #expect(!model.accessGranted)
         access.granted = true
         model.back()
         #expect(model.accessGranted)
+    }
+}
+
+// MARK: Ticked off by Glow
+
+@MainActor @Test func openingGlowDeskTicksTheDisplaysStep() {
+    SetupFixture.withStore { store, _ in
+        // Openings before setup don't count.
+        store.glowDeskOpens = 3
+        let model = makeModel(store)
+        #expect(!model.openedGlowDesk)
+        // What MenuBarView does each time Glow Desk opens.
+        store.glowDeskOpens += 1
+        #expect(model.openedGlowDesk)
+    }
+}
+
+@MainActor @Test func aKeyGlowTakesTicksTheKeysStep() async {
+    await SetupFixture.withStore(adapter: FakeAdapter()) { store, _ in
+        await store.refresh()
+        let up = BrightnessKeyPress(direction: .up, quarterStep: false)
+        // A press before setup opened doesn't count.
+        #expect(store.handleBrightnessKey(up, pointerDisplay: nil))
+        let model = makeModel(store, access: FakeAccess(granted: true))
+        model.step = .keys
+        #expect(model.keysReachGlow && model.keysLeftToMacOS == nil)
+        #expect(!model.pressedKey)
+        let before = brightness(store, dell)
+        #expect(store.handleBrightnessKey(up, pointerDisplay: nil))
+        #expect(model.pressedKey)
+        #expect(brightness(store, dell) != before)
+    }
+}
+
+@MainActor @Test func aKeyLeftToMacOSTicksNothing() async {
+    await SetupFixture.withStore(adapter: FakeAdapter()) { store, _ in
+        await store.refresh()
+        store.controlTarget = .macOnly
+        let model = makeModel(store, access: FakeAccess(granted: true))
+        #expect(model.keysLeftToMacOS?.contains("Mac") == true)
+        #expect(!model.keysReachGlow)
+        #expect(!store.handleBrightnessKey(BrightnessKeyPress(direction: .up, quarterStep: false), pointerDisplay: nil))
+        #expect(!model.pressedKey)
+    }
+    SetupFixture.withStore { store, _ in
+        let model = makeModel(store, access: FakeAccess(granted: true))
+        #expect(model.keysLeftToMacOS?.contains("demo displays") == true)
+        #expect(!store.handleBrightnessKey(BrightnessKeyPress(direction: .down, quarterStep: false), pointerDisplay: nil))
+        #expect(!model.pressedKey)
+    }
+}
+
+@MainActor @Test func theKeysStepSaysWhatAPressChanges() async {
+    await SetupFixture.withStore(adapter: FakeAdapter()) { store, _ in
+        await store.refresh()
+        let model = makeModel(store, access: FakeAccess(granted: true))
+        #expect(model.keysChange == "Every display")
+        store.controlTarget = .underCursor
+        #expect(model.keysChange == "The display under the pointer")
+        // Focused with nothing chosen takes the first external display, as the keys do.
+        store.controlTarget = .focused
+        store.focusedDisplayID = nil
+        #expect(model.keysChange == "Dell U2723QE")
+        store.focusedDisplayID = mac
+        #expect(model.keysChange == "MacBook Pro")
     }
 }
 
@@ -578,14 +692,4 @@ private func brightness(_ store: GlowStore, _ id: PersistentDisplayIdentity) -> 
     #expect(YourDesk(displays: demo).state == .ready)
     // Displays found while discovery is still going are shown.
     #expect(YourDesk(displays: [demo[0]], isReading: true).state == .builtInOnly)
-}
-
-@MainActor @Test func eachDisplaySaysHowGlowSetsItInPlainWords() {
-    let states: [ControlStatus.State] = ControlRoute.allCases.map { .route($0) } + [.untested, .contradicted, .failed, .paused]
-    let lines = states.map(SetupDisplayRow.howGlowSetsIt)
-    #expect(Set(lines).count == states.count)
-    for line in lines {
-        #expect(!line.isEmpty)
-        #expect(!line.contains("DDC") && !line.contains("VCP") && !line.contains("0x"))
-    }
 }

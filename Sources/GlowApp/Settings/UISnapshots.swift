@@ -280,35 +280,43 @@ enum UISnapshots {
         window.close()
     }
 
-    /// Every setup step in the window `SetupWindowController` builds, off screen: the
-    /// welcome; your displays reading, with none, one, your own and the demo desk; the match
-    /// choosing, mid-adjustment and matched on two displays, and with one; the finish with
-    /// the keys' permission asked, waiting, allowed and under `swift run`; and the tutorial.
-    /// Matching runs on demo displays of its own, so the stores after this are untouched.
+    /// Every setup step in the window `SetupWindowController` builds, off screen, in each
+    /// state it has: your displays as the demo desk, reading, with none, one, your own,
+    /// once Glow Desk has opened and while paused; the match choosing on three displays and
+    /// on two, comparing, saving, matched, a display that didn't go back, and paused; the
+    /// keys asking, asked, under `swift run`, allowed, pressed and left to macOS; open at
+    /// login under `swift run` and in Glow.app; and the tutorial. Every desk but the first
+    /// is demo displays of its own through a mock adapter, so the stores after this are
+    /// untouched. Ticks come from the same counts the app keeps: an opening of Glow Desk,
+    /// and a brightness key handled by the store, which writes only to its mock adapter.
     private static func renderSetup(store: GlowStore, loginItem: LoginItem, to folder: URL, appearances: [(NSAppearance.Name, String)]) {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let asked = KeyPermission(isGranted: { false }, request: {}, isBundledApp: { true })
         let granted = KeyPermission(isGranted: { true }, request: {}, isBundledApp: { true })
         let terminal = KeyPermission(isGranted: { false }, request: {}, isBundledApp: { false })
+        let live = SetupLogin.live(loginItem)
+        let bundled = SetupLogin(canRegister: true, isOn: { false }, detail: { "" }, set: { _ in })
         let own = ownDisplays()
         let suite = "\(suiteName).setup"
         defer { UserDefaults(suiteName: suite)?.removePersistentDomain(forName: suite) }
+        func mock(_ pick: @escaping ([DisplaySnapshot]) -> [DisplaySnapshot]) -> MockDisplayAdapter {
+            MockDisplayAdapter(displays: { pick(DemoData.displays(generation: $0)) })
+        }
         /// A desk of demo displays on a defaults suite of its own.
-        func desk(_ pick: @escaping ([DisplaySnapshot]) -> [DisplaySnapshot]) -> GlowStore {
+        func desk(_ adapter: MockDisplayAdapter) -> GlowStore {
             let defaults = UserDefaults(suiteName: suite) ?? .standard
             defaults.removePersistentDomain(forName: suite)
-            let desk = GlowStore(settings: GlowSettingsStore(defaults: defaults), demoDisplays: false,
-                                 adapter: MockDisplayAdapter(displays: { pick(DemoData.displays(generation: $0)) }))
+            let desk = GlowStore(settings: GlowSettingsStore(defaults: defaults), demoDisplays: false, adapter: adapter)
             wait { await desk.refresh() }
             return desk
         }
-        let none = desk { _ in [] }
-        let single = desk { Array($0.prefix(1)) }
+        let none = desk(mock { _ in [] })
+        let single = desk(mock { Array($0.prefix(1)) })
         for (appearance, suffix) in appearances {
             func file(_ name: String) -> URL { folder.appendingPathComponent("setup-\(name)-\(suffix).png") }
             func open(_ step: SetupModel.Step, on desk: GlowStore = store, tutorialOnly: Bool = false, permission: KeyPermission = asked,
-                      showing override: YourDesk? = nil) -> SetupWindowController {
-                let controller = SetupWindowController(store: desk, loginItem: loginItem, tutorialOnly: tutorialOnly, permission: permission,
+                      login: SetupLogin = live, showing override: YourDesk? = nil) -> SetupWindowController {
+                let controller = SetupWindowController(store: desk, login: login, tutorialOnly: tutorialOnly, permission: permission,
                                                        patches: { _ in WindowOnlyPatches() })
                 controller.model.deskOverride = override
                 controller.model.step = step
@@ -327,48 +335,84 @@ enum UISnapshots {
                 controller.close()
             }
             func one(_ step: SetupModel.Step, _ name: String, on desk: GlowStore = store, tutorialOnly: Bool = false,
-                     permission: KeyPermission = asked, showing override: YourDesk? = nil) {
-                let controller = open(step, on: desk, tutorialOnly: tutorialOnly, permission: permission, showing: override)
+                     permission: KeyPermission = asked, login: SetupLogin = live, showing override: YourDesk? = nil) {
+                let controller = open(step, on: desk, tutorialOnly: tutorialOnly, permission: permission, login: login, showing: override)
                 shoot(controller, name)
                 close(controller)
             }
 
-            one(.welcome, "1-welcome")
-
-            one(.displays, "2-displays-demo")
-            one(.displays, "2-displays-reading", showing: YourDesk(displays: [], isReading: true))
-            one(.displays, "2-displays-none", on: none)
-            one(.displays, "2-displays-one", showing: YourDesk(displays: Array(own.prefix(1))))
-            one(.displays, "2-displays-own", showing: YourDesk(displays: own))
+            one(.displays, "1-displays-demo")
+            // Read on a desk with none yet, and one display alone: no match step, so three dots.
+            one(.displays, "1-displays-reading", on: none, showing: YourDesk(displays: [], isReading: true))
+            one(.displays, "1-displays-none", on: none)
+            one(.displays, "1-displays-one", on: single, showing: YourDesk(displays: Array(own.prefix(1))))
+            one(.displays, "1-displays-own", showing: YourDesk(displays: own))
+            // Glow Desk opening, as MenuBarView counts it, ticks the step off.
+            let opening = open(.displays, showing: YourDesk(displays: own))
+            store.glowDeskOpens += 1
+            shoot(opening, "1-displays-opened")
+            close(opening)
 
             // Choosing on three displays, then a whole Quick Match on two: the Dell set a
-            // little dimmer than it was, then saved.
-            one(.match, "3-match-pick-three")
-            let two = desk { $0.filter { $0.isBuiltIn || $0.name.hasPrefix("Dell") } }
+            // little dimmer than it was, saved, and matched.
+            one(.match, "2-match-pick-three")
+            let two = desk(mock { $0.filter { $0.isBuiltIn || $0.name.hasPrefix("Dell") } })
             let matching = open(.match, on: two)
-            shoot(matching, "3-match-pick")
+            shoot(matching, "2-match-pick")
             matching.model.startMatch()
             if let session = matching.model.match, let dell = session.adjustable.first {
                 session.set(dell.id, to: 55)
             }
-            shoot(matching, "3-match-adjust", after: 0.5)
-            wait { await matching.model.saveMatch() }
-            shoot(matching, "3-match-matched")
+            shoot(matching, "2-match-adjust", after: 0.5)
+            // Each display's write takes the mock 90 ms, so this catches it saving.
+            let saving = Task { await matching.model.saveMatch() }
+            shoot(matching, "2-match-settling", after: 0.04)
+            wait { await saving.value }
+            shoot(matching, "2-match-matched")
             close(matching)
-            one(.match, "3-match-one", on: single)
+            // Cancelled after the Dell stopped answering: it can't be put back.
+            let silent = mock { $0.filter { $0.isBuiltIn || $0.name.hasPrefix("Dell") } }
+            let failing = open(.match, on: desk(silent))
+            failing.model.startMatch()
+            if let session = failing.model.match, let dell = session.adjustable.first {
+                session.set(dell.id, to: 55)
+            }
+            pause(failing.window?.contentView ?? NSView(), for: 0.5)
+            silent.silentDisplays = [DemoData.dellIdentity]
+            wait { await failing.model.cancelMatch() }
+            shoot(failing, "2-match-problem")
+            close(failing)
 
-            one(.finish, "4-finish")
-            let asking = open(.finish)
+            one(.keys, "3-keys")
+            let asking = open(.keys)
             asking.model.requestAccess()
-            shoot(asking, "4-finish-asked")
+            shoot(asking, "3-keys-asked")
             close(asking)
-            one(.finish, "4-finish-allowed", permission: granted)
-            one(.finish, "4-finish-swift-run", permission: terminal)
+            one(.keys, "3-keys-swift-run", permission: terminal)
+            // Allowed on someone's own desk, then a key press the store takes.
+            let keyed = desk(mock { $0 })
+            let pressing = open(.keys, on: keyed, permission: granted)
+            shoot(pressing, "3-keys-allowed")
+            _ = keyed.handleBrightnessKey(BrightnessKeyPress(direction: .up, quarterStep: false), pointerDisplay: nil)
+            shoot(pressing, "3-keys-pressed")
+            close(pressing)
+            // Demo displays leave the keys to macOS.
+            one(.keys, "3-keys-left-to-macos", permission: granted)
 
-            // Reopened from Settings: the displays and the match, then Done.
+            one(.finish, "4-finish-swift-run")
+            one(.finish, "4-finish", login: bundled)
+
+            // Displays asleep: Glow Desk's pause notice, and matching waits.
+            let asleep = desk(mock { $0 })
+            asleep.handle(.sleep)
+            one(.displays, "1-displays-paused", on: asleep)
+            one(.match, "2-match-unavailable", on: asleep)
+
+            // Reopened from Settings: the same steps without the permission or open at login.
             one(.displays, "tutorial-displays", tutorialOnly: true)
             one(.match, "tutorial-match", tutorialOnly: true)
-            one(.match, "tutorial-match-one", on: single, tutorialOnly: true)
+            one(.keys, "tutorial-keys", on: keyed, tutorialOnly: true, permission: granted)
+            one(.displays, "tutorial-displays-one", on: single, tutorialOnly: true)
         }
     }
 

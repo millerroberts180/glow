@@ -98,6 +98,6 @@ for appearance in ["light", "dark"] {
     save(crop(load("keys/hud-boxes-\(appearance).png"), width: 1392, height: 496), as: "overlay-\(appearance).png")
     save(load("match/calibration-quick-compare-\(appearance).png"), as: "brightness-match-\(appearance).png")
     save(load("pane-scenes-partial-\(appearance).png"), as: "scenes-\(appearance).png")
-    save(scaled(load("setup/setup-2-displays-own-\(appearance).png"), width: 640), as: "setup-\(appearance).png")
+    save(scaled(load("setup/setup-1-displays-own-\(appearance).png"), width: 640), as: "setup-\(appearance).png")
 }
 print("wrote the README images to \(images.path)")

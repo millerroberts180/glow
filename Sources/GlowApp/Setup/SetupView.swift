@@ -19,9 +19,9 @@ struct SetupView: View {
 
     @ViewBuilder private var step: some View {
         switch model.step {
-        case .welcome: WelcomeStep()
         case .displays: DisplaysStep(model: model).setupPage()
         case .match: MatchStep(model: model)
+        case .keys: KeysStep(model: model).setupPage()
         case .finish: FinishStep(model: model).setupPage()
         }
     }
@@ -129,6 +129,38 @@ struct SetupNote: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: GlowTokens.Radius.tile, style: .continuous).fill(GlowTokens.Surface.subtle))
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// Something to do in Glow itself, ticked off when Glow sees it happen, never on a timer.
+/// VoiceOver says whether it's done, and announces it when it is.
+struct SetupTask: View {
+    let text: Text
+    let spoken: String
+    let done: Bool
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    init(_ text: Text, spoken: String, done: Bool) {
+        self.text = text
+        self.spoken = spoken
+        self.done = done
+    }
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: GlowTokens.Space.s2) {
+            Image(systemName: done ? "checkmark.circle.fill" : "circle")
+                .foregroundStyle(done ? GlowTokens.Status.success : (contrast == .increased ? GlowTokens.Text.secondary : GlowTokens.Text.tertiary))
+            text
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .font(GlowTokens.Typography.body)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spoken)
+        .accessibilityValue(done ? "Done" : "Not done yet")
+        .onChange(of: done) { _, done in
+            if done { AccessibilityNotification.Announcement("Done. \(spoken)").post() }
+        }
     }
 }
 

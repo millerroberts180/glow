@@ -95,6 +95,8 @@ Glow adopts this structure. Glow's brand guidelines still supply colour, status 
 
 **Setup.** First-run setup follows the same apps' step flow. It is built after Settings and reuses Settings' components. Re-run from General ("Open Tutorial…"), it shows only the teaching steps.
 
+**Superseded in part, 2026-11-19,** by [ADR 0004](0004-setup-teaches-glow-desk.md). Setup keeps the step flow, but it has no brand welcome, and its displays step is Glow Desk's own view rather than Settings' components.
+
 ## Consequences
 
 - New monitor features are added as catalog entries and tests, not as new screens.

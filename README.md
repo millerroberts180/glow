@@ -60,8 +60,8 @@ at once with the [Line Apps installer](https://lineapps.vercel.app).
 
 Glow isn't notarized yet, so macOS stops it the first time it opens. Choose **Done**, then open
 System Settings › Privacy & Security and choose **Open Anyway** beside Glow. On macOS 14,
-Control-click Glow in Applications and choose **Open**. A short setup then walks through your
-displays, and asks for Accessibility access for the brightness keys.
+Control-click Glow in Applications and choose **Open**. A short setup then shows your displays in
+Glow Desk's rows, matches their brightness, and asks for Accessibility access for the brightness keys.
 
 ## Private and careful
 

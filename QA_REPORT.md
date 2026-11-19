@@ -51,6 +51,9 @@ Date: 2026-11-07. Host: macOS 15 (Darwin 24.6), Swift 6.2.3, Command Line Tools 
 | Final round, 2026-11-09: `GLOW_ARCHS=arm64 scripts/bundle.sh` | **Pass.** 2.7 MB, arm64, release. `strings` finds none of `GlowSimulatedMonitors`, `simulated-selftest`, `setup-ui` or "(simulated)" in the binary. With `GLOW_CONFIGURATION=debug` it's 5.7 MB and has them. |
 | Displays already connected at launch, 2026-11-09 | **Fixed.** At launch the built-in display waited about 25 s for the AOC behind the hub. Now `--probe-readings` shows the built-in display ready at 21 ms, and the AOC on software dimming at 6.1 s after one request, not four. `./scripts/test.sh`: 344 tests, 0 failures (7 new). On the test Mac, Glow Desk showed three simulated monitors while the slow AOC said "Checking connection…", and Refresh Displays kept every row. See "Displays already connected at launch" below. |
 | Trial and license keys removed, 2026-11-16 | **Pass.** `swift build`, no warnings. `./scripts/test.sh`: 314 tests, 0 failures: the 344 from before, less the 31 in the three removed files and one right-click menu test, plus 2 new. `--snapshot-ui` wrote 180 PNGs, with no `license/` folder; `window-displays` and `popover` were opened. `scripts/release.sh --unsigned` exits 0 and makes `dist/Glow-0.1.0-unsigned.dmg`. In the release binary, `strings` finds only `TrialRecord` and `LicenseKey`, the keys Glow deletes, and the License agreement link. See "Trial and license keys, 2026-11-09 to 2026-11-16" below. |
+| Setup cut to what teaches, 2026-11-19: `swift build` | **Pass**, no warnings. |
+| Setup cut to what teaches, 2026-11-19: `./scripts/test.sh` | **Pass.** 321 tests, 0 failures: the 315 on `main`, with `SetupTests.swift` at 38 (8 new, 4 rewritten, 2 deleted). |
+| Setup cut to what teaches, 2026-11-19: `--snapshot-ui` | **Pass.** 198 PNGs, 52 of them in `setup/`, every step and state, light and dark. I opened every setup image. `scripts/readme-images.swift` changed only `docs/images/setup-light.png` and `setup-dark.png`; every Glow Desk and Settings image in `docs/images` came out byte-identical. See "Setup cut to what teaches, 2026-11-19" below. |
 
 Earlier, `swift test` failed to import `Testing` on this toolchain. `scripts/test.sh` fixes that by passing the Command Line Tools framework paths. The earlier "blocked" result no longer applies.
 
@@ -399,6 +402,8 @@ Four areas of work, integrated on 2026-11-09. Each item says how it was checked.
 
 ### Setup
 
+**Superseded in part, 2026-11-19:** see "Setup cut to what teaches, 2026-11-19" below. The welcome, Set your brightness and You're set are gone; matching is unchanged apart from its copy, and setup no longer shows the move-together check button.
+
 - **Four steps, all real:** Welcome (no animation, so Get Started works at once) → Your displays (a live slider per display and a plain line on how Glow sets it; reading, none, one, demo and paused states) → Match their brightness → You're set (where Glow lives, **Allow…**, **Open Glow at login**). The tutorial runs the middle two and ends with Done. Deleted: the pretend desk, tour, key sandbox and brand intro, with their tests and snapshots.
 - **Matching** is a real Quick Match `MatchSession` inside setup, with the same patches and the same `MatchCompare` form, saved as Settings › Brightness Match saves. Cancel, Esc, Back, closing and finishing all put back every display it changed. With one display the step is "Set your brightness". **Not Now** skips it.
 - **Two choices to review:** saving a match in setup turns on **Move matched displays together** (shown as a check button that can be turned off), so the popover slider visibly moves both. And as before, a save records Quick as the method, so Settings › Brightness Match opens on Quick afterwards.
@@ -423,7 +428,7 @@ macOS's `DisplayServicesGetBrightness` answered 0 % on one read-only run and 100
 - **Setup:** a real match on two displays (patches on each screen, setup above them, restore on Cancel/Esc/Back/close), Allow… and the grant being noticed, Open at login applied.
 - **Reading on real hardware:** DDC/CI rereads, back-off, Patience's relinking, Hide, and At launch › Put back what Glow last set (never turned on against real hardware). While Glow is open stopping when Glow Desk and Settings close. How often "Changed outside Glow" fires on a built-in display with automatic brightness on.
 - **Quit Glow** in General actually quitting (same call as before; not clicked).
-- Setup's Your displays step draws sliders even when the look is Boxes.
+- Setup's Your displays step draws sliders even when the look is Boxes. *(Settled 2026-11-19: the step uses Glow Desk's own rows, which follow the Look.)*
 
 ## In the app, on the test Mac, 2026-11-09
 
@@ -447,7 +452,7 @@ The in-app checks ran on a test Mac: the arm64 bundle in a macOS 15.6.1 virtual 
     With no other Glow window open, closing Glow Desk hands the Mac back to the app in use before it opened. Now Settings opens first and the mark is clicked after (`SettingsWindowPresenter.show`). On the test Mac, Glow Desk closes, Settings is active, and one click on the mark opens Glow Desk again.
 - **Polish, not changed:**
   - The overlay card can cover part of setup or Settings.
-  - With one display, setup's second and third steps show the same slider.
+  - With one display, setup's second and third steps show the same slider. *(Settled 2026-11-19: with one display there's no match step.)*
   - **Allow…** shows macOS's prompt and opens System Settings at the same time.
   - **Move matched displays together** stays enabled when there's nothing to match.
   - Connection shows "Write reliability: Not yet tested" next to "Tested successfully". One is about writes and the other about reads, but side by side they look like a contradiction.
@@ -496,6 +501,31 @@ A 7-day trial and license keys were built and tested on 2026-11-09, and removed 
 - That the Keychain delete works on every Mac. The tests check the preferences keys only. On this Mac, after the new build's first launch from `/Applications`, neither key nor the "Glow trial" item was left.
 - The new build's windows weren't looked at on screen. The tests and snapshots cover the menu, Settings and Glow Desk.
 
+## Setup cut to what teaches, 2026-11-19
+
+ADR 0004 has the reasons. Setup is now at most four steps, each teaching one thing:
+
+1. **Your displays:** Glow's mark at 32 pt and one line, then Glow Desk's own rows (`DeskDisplays`) at its 308 pt width. Beside them is "Click ✦ in the menu bar to open Glow Desk.", ticked when Glow Desk opens. A caption explains the route labels, and with demo displays a note says where to turn them off. States: demo, reading, none, one, own, opened and paused.
+2. **Match their brightness**, only with two displays or more, and not in safe mode. Pick, compare, settling, matched, problem, and "Displays are asleep" while paused. **Not Now** skips it.
+3. **The brightness keys:** **Allow…** with one line on why, the asked line, and the `swift run` note. Once access is on: "Access is on", then "Press a brightness key on your keyboard. Every display changes with it.", ticked when Glow takes a press. With demo displays, safe mode, Mac chosen for the keys or no displays, it says the keys work as they do without Glow.
+4. **Open at login,** with the `swift run` note and the line on where the tutorial is.
+
+The tutorial runs 1, 2 when it can, and 3 only once Glow can take the keys.
+
+- **Removed:** the welcome page, setup's own sliders and their status lines, Set your brightness, the Try-it slider and move-together check button after a match, and You're set with its "In the menu bar" row. `SetupWelcome.swift` and the `title1` and `cardTitle` styles went with them.
+- **Ticks:** `GlowStore.glowDeskOpens` (counted in `MenuBarView.onAppear`) and `GlowStore.keyPressesTaken` (counted in `handleBrightnessKey` when Glow takes a press). Setup notes both when it opens. No timers.
+- **Settings › General:** the Tutorial line now reads "Walks through your displays, matching their brightness and the brightness keys again."
+- **Checked off screen:** every setup step and state in `setup/`, light and dark, all opened. `SetupTests` covers the step lists (two displays, one, none, safe mode, Mac only, a display leaving mid-step, tutorial), the ticks (Glow Desk opening, a key Glow takes, a key left to macOS), what a press changes for each key target, and the permission being watched only on the keys step.
+- **Still demo-only:** `--snapshot-ui`'s setup desks use `MockDisplayAdapter`. The key-press shot calls `handleBrightnessKey` on a mock store, so no tap, overlay or hardware write is involved.
+
+### Not verified (2026-11-19)
+
+- Glow Desk's `onAppear` running on each real open from the menu bar, so the first step ticks.
+- The grant being noticed on the keys step, then a real brightness key ticking it and changing the displays, with the overlay.
+- VoiceOver reading each task and hearing "Done." when it ticks; Tab order through the steps; Increase Contrast; Reduce Motion.
+- Open at login applied by Start Using Glow from the bundle.
+- Glow Desk's rows in setup with the Look set to Boxes, in a real window.
+
 ## What the tests cover
 
 | File | Tests | What they check |
@@ -514,12 +544,13 @@ A 7-day trial and license keys were built and tested on 2026-11-09, and removed 
 | `KeyWriteTests.swift` | 12 | The coalescer sends the first value at once, drops intermediates while one is in flight, always sends the last and confirms only the last; a value during a read-back takes over; settings are independent; a refused write ends its run. The step and look settings decode when missing or unknown. The overlay model updates in place; the 16-box fill. |
 | `LevelBoxTests.swift` | 15 | Box fills at a level (47 % is seven boxes and an eighth 52 % full), the click rule and stepping down from the top lit box, stepping on short ranges, and which box a point hits. |
 | `ReadingTests.swift` | 31 | Both reread tiers and the timetable for Off, While open and Always; the pause; skipping a setting being changed, and the funnel leaving a change in flight alone; the 60 s mark; back-off for silent displays; untrusted readings dropped; reads never write; At launch's rules, safe mode and demo exclusions; Patience reaching the hardware profile; uncatalogued codes read once and never writable; Hide and Show per identity, out of the OSD, popover and scenes; the settings decoding. |
-| `SetupTests.swift` (rewritten 2026-11-09) | 32 | Step lists for the first run and the tutorial; the main button at each step; one display versus two, Not Now writing nothing, safe mode saying why; Save keeping a Quick calibration as Settings does and turning on move-together; Cancel, Back and closing restoring every display (mock adapter); arrow keys only while comparing; the window rising only for patches on screen; the permission watched only on the finish and noticed within a second; open at login applied only when it differs; seen on finish and close, never by the tutorial; plain words for every display status. |
+| `SetupTests.swift` (rewritten 2026-11-19) | 38 | Step lists that follow the desk: two displays, one, none, safe mode, Mac only, and the step on show staying listed when a display leaves; the tutorial with the same steps, no permission and no open at login. Opening Glow Desk ticks Your displays; a key Glow takes ticks the keys step, and one left to macOS ticks nothing; what a press changes for each key target. One display going straight to the keys, sleeping displays saying matching waits. The rest as below: the main button, Not Now, Save, Cancel, Back and closing restoring every display, the arrow keys, the window rising for patches, the permission watched only on the keys step, open at login, seen on finish and close. |
+| `SetupTests.swift` (2026-11-09 to 2026-11-19) | 32 | Step lists for the first run and the tutorial; the main button at each step; one display versus two, Not Now writing nothing, safe mode saying why; Save keeping a Quick calibration as Settings does and turning on move-together; Cancel, Back and closing restoring every display (mock adapter); arrow keys only while comparing; the window rising only for patches on screen; the permission watched only on the finish and noticed within a second; open at login applied only when it differs; seen on finish and close, never by the tutorial; plain words for every display status. |
 | `SetupTests.swift` (before 2026-11-09) | 34 | Completion is saved and decoded. First-run and tutorial steps: the permission comes before Try it, and the tutorial shows it only while access is off. Back, finish, closing midway and open at login under `swift run`. The permission step: "Skip for Now", watching only on that step, asking, and noticing the grant within a second. The tour: each stop fires once and is announced once; only the current stop ticks; the overlay stop waits for the switch; every stop has a keyboard way (↑/↓ in the sandbox, ←/→, focus, Space); the checklist goes back and forth; the tour survives Back and Continue; choosing saves the setting and previewing doesn't. The pretend desk: all four control labels, responders per target, key-grid steps, overlays per display, the top end and settings Glow can't control. Try it's reading, none, demo, built-in-only and ready states. |
 
 ## Walkthrough (from the off-screen snapshots)
 
-Steps 1–3 below describe the app before 2026-11-09. Since then: setup is the four steps in "Keys, popover, setup and reading" above, in a 640 × 600 window; Glow Desk can draw boxes and has rounder buttons; General has Quit Glow and no Wake section; the Glow pane has no Quit; Controls adds Brightness step and Look; Reading is a new pane between Controls and General; Displays adds Reading and Hidden by you sections.
+Steps 1–3 below describe the app before 2026-11-09. Since then: setup is the steps in "Setup cut to what teaches, 2026-11-19" above (before that, the four in "Keys, popover, setup and reading"), in a 640 × 600 window; Glow Desk can draw boxes and has rounder buttons; General has Quit Glow and no Wake section; the Glow pane has no Quit; Controls adds Brightness step and Look; Reading is a new pane between Controls and General; Displays adds Reading and Hidden by you sections.
 
 1. **First launch: setup**, an 840 × 600 window. The first run has five steps. Reopened from Settings › General › Open Tutorial…, it shows the tour and Try it, plus the permission step while access is off.
    - **Welcome:** Glow's mark, two display outlines, draws itself in and the two screens ease to the same light. Under Reduce Motion it appears without the move.
