@@ -69,12 +69,17 @@ I wanted setup cut to what teaches, looking and behaving like the app it teaches
 
 ## Deferred
 
+- On a macOS 15 test Mac with one display, from a signed bundle, I saw:
+  - setup's three steps;
+  - opening Glow Desk tick Your displays, in setup and then twice in the tutorial;
+  - **Allow…** bring up macOS's Accessibility prompt;
+  - Open at login on after Start Using Glow;
+  - setup not coming back on the next launch.
 - I haven't tried these on a real Mac:
-  - `onAppear` running on each real open of Glow Desk;
   - the grant being noticed, and a real key ticking the step;
+  - matching, which needs two displays;
   - VoiceOver hearing the ticks;
-  - Increase Contrast;
-  - open at login being applied.
+  - Increase Contrast.
 - With one display, Your displays has empty space below the row.
 - The setup window is still 640 × 600.
 
