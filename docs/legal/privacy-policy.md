@@ -59,9 +59,9 @@ its own, and it sends no data to us or anyone else. The commands it sends to you
 them, through their video cables.
 
 Some links in Glow open other software, under that software's own privacy terms, and only when you
-click them: the website, privacy policy and license agreement links in Settings › Glow open in your
-browser, and the support email address opens your email app. Allow…, for the brightness keys, opens
-System Settings.
+click them: the website, privacy policy, license agreement and support links in Settings › Glow open in
+your browser, and the support link goes to Glow's issue tracker on GitHub. Allow…, for the brightness
+keys, opens System Settings.
 
 macOS itself may contact Apple about Glow, for example to check its notarization the first time you
 open it, or to send a crash report if you have chosen to share analytics with Apple. Apple's privacy
