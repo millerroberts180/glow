@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 802 256" width="802" height="256" role="img" aria-labelledby="title desc">
+  <title id="title">Glow</title>
+  <desc id="desc">The Glow spark beside the word glow in Ink.</desc>
+  <!-- Symbol at full size, moved down 2 so its centre sits on the middle of the x-height (y 128); gap 40 to the wordmark, as Hum's and Pulse's lockups have. -->
+  <g transform="translate(0 2)"><path d="M128 48 C137 77 168 108 216 126 C168 144 137 175 128 204 C119 175 88 144 40 126 C88 108 119 77 128 48 Z" fill="none" stroke="#DE8B6D" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g transform="translate(268 0)"><path d="M24 128 A40 40 0 1 1 104 128 A40 40 0 1 1 24 128 M104 76 V188 A40 40 0 0 1 64 228 M154 32 V180 M204 128 A40 40 0 1 1 284 128 A40 40 0 1 1 204 128 M334 76 V128 A40 40 0 0 0 414 128 V76 M414 128 A40 40 0 0 0 494 128 V76" fill="none" stroke="#21170C" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg>

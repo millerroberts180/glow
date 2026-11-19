@@ -1,0 +1,125 @@
+DRAFT FOR LEGAL REVIEW. NOT IN FORCE.
+This draft has not been reviewed by a lawyer. Text in [square brackets] is a placeholder to be
+completed before Glow is released.
+
+GLOW END USER LICENSE AGREEMENT
+Version [1.0], last updated [date]
+
+This End User License Agreement ("Agreement") is between you and [LICENSOR: owner's full legal name,
+or the business that publishes Glow, and its address] ("we", "us"). It covers the Glow software for macOS,
+its documentation and any updates we provide for it (together, "Glow").
+
+By installing, copying or using Glow, you agree to this Agreement. If you do not agree, do not install
+or use Glow.
+
+1. LICENSE
+
+1.1 We grant you a personal, non-exclusive, non-transferable license to install and use Glow on Macs
+that you own or control.
+
+1.2 You may make one copy of Glow for backup.
+
+2. RESTRICTIONS
+
+Except as this Agreement allows, or as applicable law permits despite this restriction, you may not:
+  (a) copy, sell, rent, lease, lend, sublicense or otherwise distribute Glow;
+  (b) reverse engineer, decompile or disassemble Glow;
+  (c) modify Glow, or remove or change any notice of ownership in it;
+  (d) bypass or interfere with its code signature.
+
+3. OWNERSHIP
+
+Glow is licensed, not sold. We, and our licensors if any, keep all rights, title and interest in Glow,
+including its copyright, trademarks and other intellectual property. Any rights not expressly granted
+to you are reserved.
+
+4. WHAT GLOW DOES TO YOUR DISPLAYS
+
+4.1 Glow changes the settings of the displays connected to your Mac. It sends commands to external
+monitors over DDC/CI, the standard by which a computer controls a monitor through its video cable, to
+change their brightness, contrast, volume, input, power and other settings they report. It changes the
+brightness of your Mac's built-in display, and of Apple displays, through macOS. It can also dim any
+display's picture in software, by changing the color tables macOS uses for that display. With your
+permission (Accessibility), it takes over your keyboard's brightness keys to do this.
+
+4.2 Each monitor's maker decides how it carries out DDC/CI commands, and some monitors do not follow
+the standard. A monitor may ignore a command, carry out a different one, switch to another input or
+into standby, or keep a setting after Glow quits. Glow asks before it switches a monitor's input or
+power or restores its factory or color settings, but it cannot know how every monitor, cable, dock or
+adapter will respond. If a display ends up in a state you do not want, its own buttons and on-screen
+menu can change it back.
+
+4.3 You are responsible for the settings you change, for the displays you use Glow with, and for
+following their makers' instructions. Glow is not designed for displays where an unexpected change,
+such as a screen going dark or switching input, could put a person or property at risk, and you must
+not use it with them.
+
+5. PRIVACY
+
+Our privacy policy at [privacy policy URL] explains what Glow stores and what it does not. In short,
+Glow keeps its settings on your Mac, never connects to the internet, and sends nothing to us.
+
+6. UPDATES AND SUPPORT
+
+We are not required to provide updates, upgrades or support. If we do provide an update, this
+Agreement applies to it unless it comes with its own terms. Support, if offered, is at [support email
+or URL].
+
+7. NO WARRANTY
+
+TO THE FULLEST EXTENT PERMITTED BY LAW, GLOW IS PROVIDED "AS IS" AND "AS AVAILABLE", WITH ALL FAULTS
+AND WITHOUT WARRANTY OF ANY KIND. WE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING ANY IMPLIED
+WARRANTIES OF MERCHANTABILITY, SATISFACTORY QUALITY, FITNESS FOR A PARTICULAR PURPOSE, ACCURACY, QUIET
+ENJOYMENT AND NON-INFRINGEMENT. WE DO NOT WARRANT THAT GLOW WILL MEET YOUR NEEDS, WORK WITH EVERY
+DISPLAY, CABLE, DOCK, ADAPTER, MAC OR VERSION OF MACOS, OR RUN WITHOUT INTERRUPTION OR ERROR.
+
+Some jurisdictions do not allow these exclusions, so some of them may not apply to you. Nothing in
+this Agreement limits rights you have as a consumer that cannot be limited by contract.
+
+8. LIMITATION OF LIABILITY
+
+TO THE FULLEST EXTENT PERMITTED BY LAW, WE WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
+CONSEQUENTIAL OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF DATA, WORK, PROFITS OR GOODWILL, ARISING FROM
+YOUR USE OF OR INABILITY TO USE GLOW, EVEN IF WE HAVE BEEN TOLD SUCH DAMAGES ARE POSSIBLE. NOR WILL WE
+BE LIABLE FOR ANY DAMAGE TO, MALFUNCTION OF, OR CHANGE TO THE SETTINGS OF A DISPLAY OR OTHER HARDWARE
+THAT RESULTS FROM COMMANDS GLOW SENDS AT YOUR REQUEST, INCLUDING OVER DDC/CI, OR FROM HOW THAT
+HARDWARE RESPONDS TO THEM. OUR TOTAL LIABILITY UNDER THIS AGREEMENT IS LIMITED TO [AMOUNT, SUCH AS
+US$50].
+
+Nothing in this Agreement excludes or limits liability that cannot be excluded or limited by law,
+such as liability for death or personal injury caused by negligence, or for fraud.
+
+9. TERMINATION
+
+This Agreement lasts until it ends. Your rights under it end automatically if you break any of its
+terms. When it ends, you must stop using Glow and delete every copy of it. Sections 3, 4.3, 7, 8, 10
+and 11 continue after it ends.
+
+10. EXPORT
+
+You may not use, export or re-export Glow in breach of United States or other applicable export laws
+and sanctions.
+
+11. GENERAL
+
+11.1 This Agreement is governed by the laws of [jurisdiction], without regard to its conflict of laws
+rules. The courts of [jurisdiction] have exclusive jurisdiction, unless the law where you live gives
+you the right to bring a claim where you live.
+
+11.2 This Agreement is the entire agreement between you and us about Glow, and replaces any earlier
+understanding. If any part of it is held unenforceable, that part is limited to the minimum extent
+needed and the rest stays in effect. If we do not enforce a term, that is not a waiver of it.
+
+11.3 You may not transfer this Agreement without our written consent. We may transfer it to a
+successor of the business that publishes Glow.
+
+11.4 Apple, Mac and macOS are trademarks of Apple Inc. Glow is not made or endorsed by Apple, or by
+the maker of any display it works with.
+
+12. CONTACT
+
+[LICENSOR: owner's full legal name or business]
+[Postal address]
+[Support email]
+
+© 2026 [owner's full legal name or business]. All rights reserved.

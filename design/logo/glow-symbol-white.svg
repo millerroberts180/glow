@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title desc">
+  <title id="title">Glow symbol, white</title>
+  <desc id="desc">A hollow four-point spark drawn as one rounded white line, for dark backgrounds.</desc>
+  <!-- Aperture Spark. 256 grid: tips (128 48), (216 126), (128 204), (40 126); ink x 28-228, centred on y 126, the family's optical line. Stroke 24, round joins. The open interior is intentional. -->
+  <path d="M128 48 C137 77 168 108 216 126 C168 144 137 175 128 204 C119 175 88 144 40 126 C88 108 119 77 128 48 Z" fill="none" stroke="#FFFFFF" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

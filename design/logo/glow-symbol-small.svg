@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title desc">
+  <title id="title">Glow symbol, small sizes</title>
+  <desc id="desc">A compact hollow four-point spark with a bolder line, for 32 pixels and below.</desc>
+  <!-- For 32 px and below: stroke 32, centred on y 128 so the tips and the 2 px line fall on whole pixels at 16 px. -->
+  <path d="M128 48 C140 78 170 108 224 128 C170 148 140 178 128 208 C116 178 86 148 32 128 C86 108 116 78 128 48 Z" fill="none" stroke="#DE8B6D" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-labelledby="title desc">
+  <title id="title">Glow app icon</title>
+  <desc id="desc">A white hollow four-point spark on an Apricot Terracotta rounded-square tile.</desc>
+  <!-- macOS grid: an 824-unit body (inset 100, radius 186) and the white symbol at 62 %, centred 2 % high: the transform Hum, Pulse and Tuck use. -->
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="#DE8B6D"/>
+  <g transform="translate(512 496) scale(2.48) translate(-128 -126)"><path d="M128 48 C137 77 168 108 216 126 C168 144 137 175 128 204 C119 175 88 144 40 126 C88 108 119 77 128 48 Z" fill="none" stroke="#FFFFFF" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg>
