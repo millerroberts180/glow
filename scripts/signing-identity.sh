@@ -6,10 +6,15 @@
 # signature changes with every build, so each rebuild needs the permission
 # granted again; a signature from one stable certificate keeps the grant.
 #
-# The certificate is trusted by nothing and signs nothing anyone else would
-# accept, so its keychain password is not a secret: it only lets builds use
-# the key without a prompt. For distribution, use a Developer ID instead
-# (GLOW_SIGN_IDENTITY in bundle.sh).
+# The certificate is trusted by nothing, so Gatekeeper accepts nothing it
+# signs, and its keychain password is not a secret: it only lets builds use
+# the key without a prompt. A notarized release is signed with a Developer ID
+# instead (GLOW_SIGN_IDENTITY in bundle.sh, DEVELOPER_ID in release.sh).
+# Until there is a Developer ID, the downloadable test DMG
+# (scripts/release.sh --unsigned) is signed with this identity, so the
+# Accessibility grant survives updates. Back up its private key (see
+# docs/release.md): a new certificate means everyone grants Accessibility once
+# more.
 set -euo pipefail
 
 name="Glow Local Signing"

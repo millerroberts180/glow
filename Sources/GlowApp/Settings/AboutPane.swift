@@ -35,7 +35,7 @@ struct AboutPane: View {
                     Link(ReleaseInfo.websiteURL.host() ?? ReleaseInfo.websiteURL.absoluteString, destination: ReleaseInfo.websiteURL)
                 }
                 LabeledContent("Support") {
-                    Link(ReleaseInfo.supportEmail, destination: ReleaseInfo.supportURL ?? ReleaseInfo.supportMailURL)
+                    Link(ReleaseInfo.supportTitle, destination: ReleaseInfo.supportURL ?? ReleaseInfo.supportMailURL)
                 }
                 LabeledContent("Privacy policy") {
                     Link("Read", destination: ReleaseInfo.privacyPolicyURL)

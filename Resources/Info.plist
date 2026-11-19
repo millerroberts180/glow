@@ -26,8 +26,6 @@
 	<string>https://glow.example/eula</string>
 	<key>GlowPrivacyPolicyURL</key>
 	<string>https://glow.example/privacy</string>
-	<key>GlowSupportEmail</key>
-	<string>support@glow.example</string>
 	<key>GlowWebsiteURL</key>
 	<string>https://glow.example</string>
 	<key>LSApplicationCategoryType</key>

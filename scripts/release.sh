@@ -12,7 +12,8 @@ usage() {
   cat <<'EOF'
 Usage: scripts/release.sh [--unsigned] [version]
   version     The version people see, such as 1.0.1. Defaults to the VERSION file.
-  --unsigned  A test DMG, signed ad hoc and not notarized, that needs no Apple account. Not for release.
+  --unsigned  A test DMG, not notarized, that needs no Apple account. Signed with "Glow Local Signing"
+              when scripts/signing-identity.sh has made it, otherwise ad hoc.
 A signed release needs DEVELOPER_ID and NOTARY_PROFILE set in the environment; see docs/release.md.
 EOF
 }
@@ -51,9 +52,16 @@ fi
 prototype_id=false
 if [[ "$(tr '[:upper:]' '[:lower:]' <<<"$BUNDLE_ID")" == *prototype* ]]; then prototype_id=true; fi
 unset_links=()
-for variable in WEBSITE_URL SUPPORT_EMAIL PRIVACY_POLICY_URL EULA_URL; do
+for variable in WEBSITE_URL PRIVACY_POLICY_URL EULA_URL; do
   [[ -n "${!variable:-}" ]] || unset_links+=("$variable")
 done
+# Support is an email address or a help page, such as the issue tracker; either one is enough.
+[[ -n "${SUPPORT_EMAIL:-}" || -n "${SUPPORT_URL:-}" ]] || unset_links+=("SUPPORT_EMAIL or SUPPORT_URL")
+unset_list=""
+if (( ${#unset_links[@]} )); then
+  unset_list="$(printf '%s, ' "${unset_links[@]}")"
+  unset_list="${unset_list%, }"
+fi
 
 # Everything a signed release needs from outside the repository is checked before anything is built,
 # so a missing piece fails at once rather than minutes in.
@@ -67,7 +75,7 @@ if ! $unsigned; then
       problems+=("BUNDLE_ID in Resources/release.env is still $BUNDLE_ID; set the final one too.")
     fi
     if (( ${#unset_links[@]} )); then
-      problems+=("${unset_links[*]} in Resources/release.env are still empty; set them too.")
+      problems+=("$unset_list in Resources/release.env are still empty; set them too.")
     fi
     {
       echo "error: a signed release needs a Developer ID certificate and notarization credentials."
@@ -96,7 +104,7 @@ EOF
     exit 1
   fi
   if (( ${#unset_links[@]} )); then
-    echo "error: ${unset_links[*]} in Resources/release.env are still empty, so About's links would lead" \
+    echo "error: $unset_list in Resources/release.env are still empty, so About's links would lead" \
       "to placeholders. Set them before a signed release." >&2
     exit 1
   fi
@@ -139,8 +147,10 @@ trap cleanup EXIT
 # The same script as a local build, with Apple silicon only, so the bundle is assembled, stamped from
 # Resources/release.env and stripped exactly as build/Glow.app is, which it never touches. Its own
 # signature (local or ad hoc, never a GLOW_SIGN_IDENTITY from the environment) only lets it launch; the
-# app is signed again below, once the version is stamped. It is always a release build, whatever
-# GLOW_CONFIGURATION says, so no debug-only flag ships.
+# app is signed again below, once the version is stamped: with the Developer ID, or for a test DMG with
+# "Glow Local Signing" when it exists. Until there is a Developer ID, the downloadable test DMG is
+# signed with that identity, so the Accessibility grant survives updates. It is always a release build,
+# whatever GLOW_CONFIGURATION says, so no debug-only flag ships.
 app="$work/Glow.app"
 dsym="$work/Glow.app.dSYM"
 GLOW_ARCHS=arm64 GLOW_CONFIGURATION=release GLOW_SIGN_IDENTITY="" scripts/bundle.sh "$app" "$dsym"
@@ -171,8 +181,22 @@ plutil -replace CFBundleVersion -string "$build_number" "$plist"
 # people grant (TCC), not an entitlement. So the hardened runtime needs no exception (docs/release.md).
 # Stamping changed Info.plist, so the bundle is signed again either way.
 if $unsigned; then
-  # Ad hoc, but under the hardened runtime as well, so a test build runs as a signed one will.
-  codesign --force --options runtime --sign - "$app"
+  # A test DMG is signed as bundle.sh signs a local build, under the hardened runtime as well, so it
+  # runs as a signed one will. macOS ties the Accessibility grant (the brightness keys) to the
+  # signature: one stable certificate keeps it across updates, where an ad-hoc signature changes with
+  # every build. Back up the certificate's private key: a new one means everyone grants Accessibility
+  # once more (docs/release.md).
+  local_name="Glow Local Signing"
+  local_keychain="$HOME/Library/Keychains/glow-signing.keychain-db"
+  if [[ -f "$local_keychain" ]] && security find-certificate -c "$local_name" "$local_keychain" >/dev/null 2>&1; then
+    security unlock-keychain -p glow-local-signing "$local_keychain"
+    codesign --force --options runtime --keychain "$local_keychain" --sign "$local_name" "$app"
+    signed_with="with $local_name"
+  else
+    codesign --force --options runtime --sign - "$app"
+    signed_with="ad hoc"
+  fi
+  echo "Signed the app $signed_with."
 else
   codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID" "$app"
 fi
@@ -269,7 +293,10 @@ ditto -c -k --keepParent "$dsym" "$symbols"
 echo
 echo "Glow $version (build $build_number), $BUNDLE_ID, Apple silicon only"
 if $unsigned; then
-  echo "Test DMG, signed ad hoc and not notarized, so Gatekeeper will refuse it. Not for release."
+  echo "Test DMG, signed $signed_with and not notarized, so Gatekeeper will refuse it."
+  if [[ "$signed_with" == "ad hoc" ]]; then
+    echo "Run scripts/signing-identity.sh once, so the Accessibility grant survives updates."
+  fi
   if (( ${#unset_links[@]} )); then
     echo "It has placeholder links, as a signed release may not."
   fi

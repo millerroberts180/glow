@@ -9,7 +9,8 @@ offline too. A release is built for Apple silicon only (arm64; see "Apple silico
 update mechanism yet. It has no trial or license key, and never connects to the network.
 
 `scripts/release.sh` does all of it. Until the Apple Developer account exists, `scripts/release.sh
---unsigned` makes a test DMG, so the packaging can be checked now.
+--unsigned` makes a test DMG, so the packaging can be checked now. That test DMG is also what people
+download until then (see "A test DMG, before the account exists").
 
 ## Where things are set
 
@@ -25,13 +26,21 @@ update mechanism yet. It has no trial or license key, and never connects to the 
 
 `scripts/bundle.sh` stamps the bundle ID, copyright and links from `Resources/release.env` on the
 bundle's copy of Info.plist, and `scripts/release.sh` builds through it, so local builds and releases
-carry the same identity. A link left empty there keeps the source plist's placeholder on `glow.example`,
-so a test build still points somewhere. Settings › Glow (About) reads the links from the bundle
-(`ReleaseInfo.swift`), and Glow opens one only when someone clicks it.
-`SUPPORT_URL` is optional: once set, it is stamped as `GlowSupportURL`, and the support link in
-Settings › Glow opens that page instead of an email. `scripts/release.sh` refuses a signed release while
-any other link is empty. The source plist keeps the same values only so it is complete on its own, and
-its version (0.1.0, build 1) is a placeholder that only a release replaces.
+carry the same identity. A website, privacy policy or EULA link left empty there keeps the source
+plist's placeholder on `glow.example`, so a test build still points somewhere. Settings › Glow (About)
+reads the links from the bundle (`ReleaseInfo.swift`), and Glow opens one only when someone clicks it.
+The privacy policy, EULA and support links point to GitHub: the first two to `docs/legal/` on `main`,
+and support to the repository's issues.
+
+Support is an email address (`SUPPORT_EMAIL`, stamped as `GlowSupportEmail`), a help page
+(`SUPPORT_URL`, stamped as `GlowSupportURL`), or both. The Support link in Settings › Glow opens the
+page when there is one, and otherwise an email. It shows the address when there is one, otherwise the
+page's host (`github.com`), as the Website link shows its host. The source plist has no support address,
+so an empty `SUPPORT_EMAIL` stays empty; only with neither set does About fall back to
+`support@glow.example` (`ReleaseInfo.swift`). I set only `SUPPORT_URL`, so Glow publishes no email
+address. `scripts/release.sh` refuses a signed release while the website, privacy policy or EULA link
+is empty, or both support settings are. The source plist keeps the bundle ID and copyright only so it
+is complete on its own, and its version (0.1.0, build 1) is a placeholder that only a release replaces.
 
 **The build number** is the UTC date, the UTC time and the git commit count, such as
 `20261110.23701.4` (2026-11-10 at 02:37:01 UTC, 4 commits). It starts with the date and time so it
@@ -91,8 +100,8 @@ notarized, so copy it to another Mac without a download, or open it on this one.
 ## Cutting a release
 
 1. Before the first release, settle the launch checklist below. The script refuses a signed build while
-   the bundle ID in `Resources/release.env` contains "prototype" (in any case), or while a link there is
-   still empty.
+   the bundle ID in `Resources/release.env` contains "prototype" (in any case), or while the website,
+   privacy policy or EULA link there is still empty, or both `SUPPORT_EMAIL` and `SUPPORT_URL` are.
 2. Set the version in `VERSION` (three numbers, such as `1.0.1`), or pass it as the argument.
 3. Commit everything. The script warns if the tree has uncommitted changes, since the release then
    matches no commit.
@@ -132,7 +141,8 @@ What the script does, in order:
    `plutil -replace <key> -string <value>`, which takes each value as one argument, so a quote or
    apostrophe stays as it is. bundle.sh stamps the bundle ID, copyright and links the same way.
 3. Signs the app: `codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID"`, with no
-   entitlements file (see below), and checks that the hardened runtime is on.
+   entitlements file (see below), and checks that the hardened runtime is on. A test DMG is signed
+   differently (see "A test DMG, before the account exists").
 4. Zips the app with `ditto -c -k --keepParent`, notarizes it with
    `xcrun notarytool submit --keychain-profile "$NOTARY_PROFILE" --wait`, and staples the ticket to the
    app with `xcrun stapler staple`.
@@ -151,12 +161,28 @@ What the script does, in order:
 scripts/release.sh --unsigned
 ```
 
-This makes `dist/Glow-<version>-unsigned.dmg` without any Apple account. The app is signed ad hoc, but
-under the hardened runtime, so it runs as a signed build will. Nothing is notarized, so the Gatekeeper
-checks are skipped, and Gatekeeper refuses the DMG once it has been downloaded. To try it on a test
-Mac, open it from System Settings › Privacy & Security › Open Anyway, or copy it over without a
-download. It is for checking the packaging only, never for release. Placeholder links are allowed in
-it; the script says so at the end.
+This makes `dist/Glow-<version>-unsigned.dmg` without any Apple account. The app is signed under the
+hardened runtime, so it runs as a signed build will: with "Glow Local Signing" when
+`scripts/signing-identity.sh` has made it, as `scripts/bundle.sh` signs (it unlocks
+`~/Library/Keychains/glow-signing.keychain-db` and passes `--keychain`), and otherwise ad hoc. The
+script prints which. Nothing is notarized, so the Gatekeeper checks are skipped, and Gatekeeper refuses
+the DMG once it has been downloaded. To try it on a test Mac, open it from System Settings › Privacy &
+Security › Open Anyway, or copy it over without a download. Placeholder links are allowed in it; the
+script says so at the end.
+
+Until there is a Developer ID, the downloadable test DMG is signed with "Glow Local Signing", so the
+Accessibility grant survives updates. macOS ties the grant to the signature. Until 2026-11-19 I signed
+the download ad hoc, and an ad-hoc signature changes with every build, so each update needed the grant
+given again. Every build signed with this one certificate has the same designated requirement
+(`codesign -d -r-` shows `certificate leaf = H"…"`), so macOS treats each update as the same app. The
+first Developer ID release will have a new requirement, so everyone grants Accessibility once more
+then.
+
+Back up the identity's private key: a new certificate means everyone grants Accessibility once more.
+In Keychain Access, export "Glow Local Signing" (in the `glow-signing` keychain) with its private key as
+a `.p12`, with a strong password, somewhere safe outside the repository (`.gitignore` excludes
+`*.p12`). `scripts/signing-identity.sh` makes a new certificate on any Mac whose `glow-signing` keychain
+doesn't already hold one.
 
 ## Apple silicon only
 
@@ -332,11 +358,11 @@ Still open before Glow is released:
 - [ ] **The bundle ID, confirmed final:** `com.millerroberts.Glow` in `Resources/release.env`, ideally on
   a domain I control. A change after testers have Glow costs them their settings and their
   Accessibility grant (see above).
-- [ ] **Every link in `Resources/release.env`:** website, support email, privacy policy and EULA
-  (`SUPPORT_URL` is optional). `scripts/release.sh` refuses a signed release while one is empty.
-- [ ] **The support email,** in `Resources/release.env`, the EULA and the privacy policy.
-- [ ] **The privacy policy URL,** in `Resources/release.env` and the EULA, once
-  `docs/legal/privacy-policy.md` is reviewed and published.
+- [ ] **The support contact in the EULA and the privacy policy,** which still say `[Support email]`.
+  About's Support link goes to the GitHub issues (`SUPPORT_URL`), and `SUPPORT_EMAIL` stays empty, so
+  Glow publishes no email address.
+- [ ] **The privacy policy URL in the EULA,** once `docs/legal/privacy-policy.md` is reviewed.
+  `Resources/release.env` already points to it on GitHub.
 - [ ] **A trademark search for "Glow" in software** (Nice class 9), at least in the US, the EU and the UK,
   before the name is printed anywhere that's hard to change. "Glow" is a common word and other apps
   already go by it, so this matters more than usual.

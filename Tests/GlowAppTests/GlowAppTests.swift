@@ -134,6 +134,13 @@ import Testing
     #expect(AboutPane.version(from: ["CFBundleShortVersionString": "1.0", "CFBundleVersion": "1.0"]) == "Version 1.0")
 }
 
+@Test func theSupportLinkNamesTheAddressThenThePageThenThePlaceholder() {
+    let issues = "https://github.com/millerroberts180/glow/issues"
+    #expect(ReleaseInfo.supportTitle(email: "help@example.com", url: .init(string: issues)) == "help@example.com")
+    #expect(ReleaseInfo.supportTitle(email: nil, url: .init(string: issues)) == "github.com")
+    #expect(ReleaseInfo.supportTitle(email: nil, url: nil) == "support@glow.example")
+}
+
 @MainActor private final class PipelineAdapter: DisplayAdapter {
     let name = "Pipeline test"
     var readBack: CapabilityValue

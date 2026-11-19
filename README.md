@@ -88,10 +88,11 @@ that speak real DDC/CI bytes, and is still to be confirmed on a real monitor; th
 ## Build from source
 
 ```sh
-swift run Glow          # run a debug build with this Mac's displays
-scripts/bundle.sh       # builds build/Glow.app, universal
+scripts/signing-identity.sh   # once per Mac, so the Accessibility grant survives rebuilds
+swift run Glow                # run a debug build with this Mac's displays
+scripts/bundle.sh             # builds build/Glow.app, universal
 open build/Glow.app
-scripts/test.sh         # runs the tests
+scripts/test.sh               # runs the tests
 ```
 
 You need Swift 6.1 or later; the Command Line Tools are enough. The brightness keys and Open at login

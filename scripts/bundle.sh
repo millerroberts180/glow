@@ -70,7 +70,8 @@ rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp Resources/Info.plist "$app/Contents/Info.plist"
 # plutil takes each value as one argument, so quotes and apostrophes in a name
-# stay as they are. A link left empty keeps the source plist's placeholder.
+# stay as they are. A link left empty keeps the source plist's placeholder,
+# where it has one; it has none for the support address or page.
 source Resources/release.env
 plist="$app/Contents/Info.plist"
 plutil -replace CFBundleIdentifier -string "${BUNDLE_ID:?is empty in Resources/release.env}" "$plist"

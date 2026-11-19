@@ -50,7 +50,7 @@ swift build
 
 ## Releasing
 
-`scripts/release.sh` builds Glow for Apple silicon, signs it with a Developer ID, notarizes and staples it, and leaves `dist/Glow-<version>.dmg` with its checksum and debug symbols. `scripts/release.sh --unsigned` makes a test DMG without an Apple account. [release.md](release.md) covers the one-time setup, crash reports and the launch checklist.
+`scripts/release.sh` builds Glow for Apple silicon, signs it with a Developer ID, notarizes and staples it, and leaves `dist/Glow-<version>.dmg` with its checksum and debug symbols. `scripts/release.sh --unsigned` makes a test DMG without an Apple account. Until there is a Developer ID, the downloadable test DMG is signed with "Glow Local Signing", the identity `scripts/signing-identity.sh` makes, so the Accessibility grant survives updates. Back up its private key: a new certificate means everyone grants Accessibility once more. [release.md](release.md) covers the one-time setup, the test DMG and its backup, crash reports and the launch checklist.
 
 ## How it works
 
