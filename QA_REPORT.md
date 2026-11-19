@@ -514,7 +514,7 @@ The tutorial runs 1, 2 when it can, and 3 only once Glow can take the keys.
 
 - **Removed:** the welcome page, setup's own sliders and their status lines, Set your brightness, the Try-it slider and move-together check button after a match, and You're set with its "In the menu bar" row. `SetupWelcome.swift` and the `title1` and `cardTitle` styles went with them.
 - **Ticks:** `GlowStore.glowDeskOpens` (counted in `MenuBarView.onAppear`) and `GlowStore.keyPressesMoved` (counted in `handleBrightnessKey` when a press changes a display). Setup notes both when it opens. No timers.
-- **Settings › General:** the Tutorial line now reads "Setup again, on your own displays."
+- **Settings › General:** the Tutorial line now reads "Setup’s steps again, without the permission or open at login."
 - **Checked off screen:** every setup step and state in `setup/`, light and dark, all opened. `SetupTests` covers the step lists (two displays, one, none, safe mode, Mac only, a display leaving mid-step, tutorial), the ticks (Glow Desk opening, a key Glow takes, a key left to macOS), what a press changes for each key target, and the permission being watched only on the keys step.
 - **Still demo-only:** `--snapshot-ui`'s setup desks use `MockDisplayAdapter`. The key-press shot calls `handleBrightnessKey` on a mock store, so no tap, overlay or hardware write is involved.
 

@@ -56,7 +56,7 @@ struct GeneralPane: View {
                     }
                     .buttonStyle(ActionButtonStyle())
                 } label: {
-                    DetailLabel(title: "Tutorial", detail: "Setup again, on your own displays.")
+                    DetailLabel(title: "Tutorial", detail: "Setup’s steps again, without the permission or open at login.")
                 }
             }
 
