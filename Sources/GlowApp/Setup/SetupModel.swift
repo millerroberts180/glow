@@ -81,7 +81,7 @@ final class SetupModel {
         accessGranted = permission.isGranted()
         step = .displays
         deskOpensBefore = store.glowDeskOpens
-        keyPressesBefore = store.keyPressesTaken
+        keyPressesBefore = store.keyPressesMoved
         // On by default the first time, where macOS allows it; afterwards, what macOS says.
         openAtLogin = login.isOn() || (login.canRegister && !store.settings.value.hasCompletedSetup)
     }
@@ -273,8 +273,8 @@ final class SetupModel {
     /// Glow Desk opened from the menu bar while setup is open.
     var openedGlowDesk: Bool { store.glowDeskOpens > deskOpensBefore }
 
-    /// Glow took a brightness key press while setup is open.
-    var pressedKey: Bool { store.keyPressesTaken > keyPressesBefore }
+    /// A brightness key changed a display while setup is open.
+    var pressedKey: Bool { store.keyPressesMoved > keyPressesBefore }
 
     /// Why a brightness key goes to macOS rather than Glow now, in Glow Desk's words, or
     /// nil when Glow takes it. The same cases as `BrightnessKeyRouting`.
@@ -292,13 +292,13 @@ final class SetupModel {
     /// What a brightness key changes now, as Glow Desk's Brightness keys choose.
     var keysChange: String {
         switch store.controlTarget {
-        case .all: return "Every display"
-        case .underCursor: return "The display under the pointer"
-        case .macOnly: return "The Mac’s own display"
+        case .all: return "every display"
+        case .underCursor: return "the display under the pointer"
+        case .macOnly: return "the Mac’s own display"
         case .focused:
             // As the keys pick it: the chosen display, or else the first external one.
             let focused = store.displays.first { $0.id == store.focusedDisplayID } ?? store.displays.first { !$0.isBuiltIn }
-            return focused?.name ?? "The focused display"
+            return focused?.name ?? "the focused display"
         }
     }
 

@@ -27,7 +27,7 @@ I wanted setup cut to what teaches, looking and behaving like the app it teaches
 | Match their brightness | Kept, with **Not Now**. Shorter copy. No Try-it slider, move-together check button or keys line. | Matching is the one thing setup does that's worth doing first. The rest repeated Glow Desk. |
 | Set your brightness (one display) | Removed. With fewer than two displays to match, or in safe mode, the step isn't listed. | One display has nothing to match, and its slider is already on the first step. |
 | You're set: In the menu bar | Removed. | The first step now points at the mark and ticks when Glow Desk opens. |
-| You're set: the brightness keys | Its own step: **Allow…** with one line on why, then a press of a real key, ticked when Glow takes it. | The permission is asked for where the next thing needs it. |
+| You're set: the brightness keys | Its own step: **Allow…** with one line on why, then a press of a real key, ticked when it changes a display. | The permission is asked for where the next thing needs it. |
 | You're set: open at login | The last step, **Open at login**, with the line on where the tutorial is. | Unchanged, apart from the page around it. |
 
 ### 2. Your displays is Glow Desk's own view
@@ -38,15 +38,15 @@ I wanted setup cut to what teaches, looking and behaving like the app it teaches
 
 ### 3. Ticks come from the app's own events
 
-- `GlowStore.glowDeskOpens` counts `MenuBarView.onAppear`, which runs each time Glow Desk opens and already started its settle animation.
-- `GlowStore.keyPressesTaken` counts the presses `handleBrightnessKey` takes, meaning every press not left to macOS.
+- `GlowStore.glowDeskOpens` counts `MenuBarView.onAppear`, where Glow Desk already starts its settle animation each time it opens.
+- `GlowStore.keyPressesMoved` counts the presses `handleBrightnessKey` takes that change a display. A press at the end of the range, or while writes are paused, is taken but ticks nothing.
 - `SetupModel` notes both counts when setup opens, so only what happens after that counts. Neither is saved.
 - No timers. VoiceOver hears "Done." and the task once when it ticks.
 
 ### 4. The keys step
 
 - It asks for Accessibility only when access is off: "It uses it for those keys only, and never sees what you type." The tap listens to system-defined media-key events only. As before, the step notices the grant by checking once a second, on this step only.
-- Once access is on, it says which displays a press changes, from Glow Desk's **Brightness keys** choice, and asks for a press.
+- Once access is on, it says which displays the keys change, from Glow Desk's **Brightness keys** choice, and asks for a press.
 - When Glow would leave the keys to macOS (demo displays, safe mode, Mac chosen in Glow Desk, or no displays yet), it says so rather than asking for a press that can't tick.
 
 ### 5. The tutorial

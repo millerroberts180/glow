@@ -72,9 +72,9 @@ extension GlowStore {
     /// pending writes included, by the step chosen in Settings › Controls.
     func handleBrightnessKey(_ press: BrightnessKeyPress, pointerDisplay: CGDirectDisplayID?) -> Bool {
         let press = BrightnessKeyPress(direction: press.direction, quarterStep: press.quarterStep && fineAdjustment, step: keyStep)
-        let taken = stepBrightness(press, pointerDisplay: pointerDisplay) != .macOS
-        if taken { keyPressesTaken += 1 }
-        return taken
+        let outcome = stepBrightness(press, pointerDisplay: pointerDisplay)
+        if outcome == .moved { keyPressesMoved += 1 }
+        return outcome != .macOS
     }
 
     /// One tick of a held key: 1% on every target, matched displays along their curves.

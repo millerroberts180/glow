@@ -56,7 +56,7 @@ struct GeneralPane: View {
                     }
                     .buttonStyle(ActionButtonStyle())
                 } label: {
-                    DetailLabel(title: "Tutorial", detail: "Walks through your displays, matching their brightness and the brightness keys again.")
+                    DetailLabel(title: "Tutorial", detail: "Setup again, on your own displays.")
                 }
             }
 

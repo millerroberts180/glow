@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The brightness keys: Accessibility first, asked for here and noticed when granted, then
-/// a press on the real keys, ticked off when Glow takes it. The tutorial shows only the
+/// a press on the real keys, ticked off when it changes a display. The tutorial shows only the
 /// press.
 struct KeysStep: View {
     let model: SetupModel
@@ -17,7 +17,7 @@ struct KeysStep: View {
                     if let reason = model.keysLeftToMacOS {
                         SetupNote(symbol: "keyboard", text: reason)
                     } else {
-                        let line = "Press a brightness key on your keyboard. \(model.keysChange) changes with it."
+                        let line = "Press a brightness key on your keyboard. The keys change \(model.keysChange)."
                         SetupTask(Text(line), spoken: line, done: model.pressedKey)
                     }
                 }

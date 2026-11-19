@@ -600,6 +600,20 @@ private func brightness(_ store: GlowStore, _ id: PersistentDisplayIdentity) -> 
     }
 }
 
+@MainActor @Test func aKeyThatChangesNothingTicksNothing() async {
+    await SetupFixture.withStore(adapter: FakeAdapter()) { store, _ in
+        await store.refresh()
+        let up = BrightnessKeyPress(direction: .up, quarterStep: false)
+        // At the top before setup opens, Up is taken but changes nothing.
+        for _ in 0..<20 { _ = store.handleBrightnessKey(up, pointerDisplay: nil) }
+        let model = makeModel(store, access: FakeAccess(granted: true))
+        #expect(store.handleBrightnessKey(up, pointerDisplay: nil))
+        #expect(!model.pressedKey)
+        #expect(store.handleBrightnessKey(BrightnessKeyPress(direction: .down, quarterStep: false), pointerDisplay: nil))
+        #expect(model.pressedKey)
+    }
+}
+
 @MainActor @Test func aKeyLeftToMacOSTicksNothing() async {
     await SetupFixture.withStore(adapter: FakeAdapter()) { store, _ in
         await store.refresh()
@@ -618,13 +632,13 @@ private func brightness(_ store: GlowStore, _ id: PersistentDisplayIdentity) -> 
     }
 }
 
-@MainActor @Test func theKeysStepSaysWhatAPressChanges() async {
+@MainActor @Test func theKeysStepSaysWhichDisplaysTheKeysChange() async {
     await SetupFixture.withStore(adapter: FakeAdapter()) { store, _ in
         await store.refresh()
         let model = makeModel(store, access: FakeAccess(granted: true))
-        #expect(model.keysChange == "Every display")
+        #expect(model.keysChange == "every display")
         store.controlTarget = .underCursor
-        #expect(model.keysChange == "The display under the pointer")
+        #expect(model.keysChange == "the display under the pointer")
         // Focused with nothing chosen takes the first external display, as the keys do.
         store.controlTarget = .focused
         store.focusedDisplayID = nil
